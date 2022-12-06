@@ -22,9 +22,7 @@ app.get('/:user', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Listening at http://localhost:${port}`)
-});
+module.exports = app;
 
 async function fetchRecentTracks(user) {
     let requestURL = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" + user + "&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=1";
