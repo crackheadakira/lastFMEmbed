@@ -22,6 +22,8 @@ app.get('/:user', async (req, res) => {
     }
 });
 
+app.listen(port, () => console.log(`Listening on port ${port}`));
+
 module.exports = app;
 
 async function fetchRecentTracks(user) {
