@@ -16,7 +16,7 @@ app.get('/:user', async (req, res) => {
         let cover = track.image[2]["#text"];
         res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(getHTML(artist, trackName, cover));
+        res.end(getHTML(artist, trackName, await getCoverBase64(cover)));
     } catch (e) {
         console.log(e);
         res.end("User not found")
@@ -37,6 +37,23 @@ async function fetchRecentTracks(user) {
             });
             resp.on('end', () => {
                 resolve(JSON.parse(data));
+            });
+        }).on("error", (err) => {
+            console.log(err.message);
+        });
+    });
+}
+
+async function getCoverBase64(url) {
+    return new Promise((resolve) => {
+        https.get(url, (resp) => {
+            resp.setEncoding('base64');
+            let data = "data:" + resp.headers["content-type"] + ";base64,";
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => {
+                resolve(data);
             });
         }).on("error", (err) => {
             console.log(err.message);
