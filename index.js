@@ -2,11 +2,11 @@ const app = require('express')();
 const https = require('https');
 const port = 3000;
 
-app.get('/api', async (req, res) => {
-    res.end("To use the API, please use the following format: /api/username")
+app.get('/', async (req, res) => {
+    res.end("To use the API, please use the following format: /username")
 })
 
-app.get('/api/:user', async (req, res) => {
+app.get('/:user', async (req, res) => {
     try {
         let user = req.params.user;
         let response = await fetchRecentTracks(user);
