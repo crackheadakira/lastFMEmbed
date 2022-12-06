@@ -9,9 +9,10 @@ Optional parameters:
 transparent - false or true (default: false)
 trackColor - hex color (default: f7f7f7)
 artistColor - hex color (default: 9f9f9f)
+bgColor - hex color, will not work with transparency (default: 181414)
 
 An example using these queries:
-/crackheadakira?transparent=true&trackColor=ffffff&artistColor=000000`;
+/crackheadakira?transparent=true&trackColor=ffffff&artistColor=000000&`;
     res.end(info)
 })
 
@@ -85,6 +86,9 @@ function getHTML(artist, track, cover, queries) {
         }
         if (queries.hasOwnProperty("artistColor") && queries.artistColor.length === 6) {
             artistColor = queries.artistColor;
+        }
+        if (queries.hasOwnProperty("bgColor") && queries.bgColor.length === 6 && queries.transparent !== "true") {
+            bgColor = "#" + queries.bgColor;
         }
     }
     return `
