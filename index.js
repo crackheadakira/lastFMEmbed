@@ -14,7 +14,7 @@ app.get('/:user', async (req, res) => {
         let artist = track.artist["#text"];
         let trackName = track.name;
         let cover = track.image[2]["#text"];
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'application/xhtml+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
         res.end(getHTML(artist, trackName, cover));
     } catch (e) {
@@ -45,16 +45,10 @@ async function fetchRecentTracks(user) {
 }
 
 function getHTML(artist, track, cover) {
-    return `<!DOCTYPE html>
-    <html lang="en">
-    
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    
-    <body>
+    return `
+    <svg width="480" height="133" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <foreignObject width="480" height="133">
+    <body xmlns="http://www.w3.org/1999/xhtml">
         <div class="main">
             <img src="${cover}" class="cover" />
             <div class="content">
@@ -62,9 +56,6 @@ function getHTML(artist, track, cover) {
                 <div class="artist">${artist}</div>
             </div>
         </div>
-    </body>
-    
-    </html>
     
     <style>
         body {
@@ -160,5 +151,8 @@ function getHTML(artist, track, cover) {
         a {
             text-decoration: none;
         }
-    </style>`
+    </style>
+    </body>
+    </foreignObject>
+    </svg>`
 }
