@@ -162,7 +162,7 @@ function getHTML(artist, track, cover, queries) {
             width: 100px;
             height: 100px;
             border-radius: 5px;
-            box-shadow: rgba(71, 95, 139, 0.3) 0px 3px 8px;
+            border: 1px solid ${bgColor};
         }
     
         a {
