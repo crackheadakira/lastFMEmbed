@@ -1,3 +1,4 @@
+const nodeHtmlToImage = require('node-html-to-image');
 const app = require('express')();
 const https = require('https');
 const port = 3000;
@@ -14,9 +15,10 @@ app.get('/:user', async (req, res) => {
         let artist = track.artist["#text"];
         let trackName = track.name;
         let cover = track.image[2]["#text"];
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'image/png');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(getHTML(artist, trackName, cover));
+        const image = await nodeHtmlToImage({ html: getHTML(artist, trackName, cover) });
+        res.end(image, 'binary');
     } catch (e) {
         res.end("User not found")
     }
@@ -67,6 +69,7 @@ function getHTML(artist, track, cover) {
     
     <style>
         body {
+            width: fit-content;
             font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
         }
     
