@@ -7,14 +7,18 @@ app.get('/api', async (req, res) => {
 })
 
 app.get('/api/:user', async (req, res) => {
-    let user = req.params.user;
-    let response = await fetchRecentTracks(user);
-    let track = response.recenttracks.track[0];
-    let artist = track.artist["#text"];
-    let trackName = track.name;
-    let cover = track.image[2]["#text"];
-    res.set('Content-Type', 'text/html');
-    res.end(getHTML(artist, trackName, cover));
+    try {
+        let user = req.params.user;
+        let response = await fetchRecentTracks(user);
+        let track = response.recenttracks.track[0];
+        let artist = track.artist["#text"];
+        let trackName = track.name;
+        let cover = track.image[2]["#text"];
+        res.set('Content-Type', 'text/html');
+        res.end(getHTML(artist, trackName, cover));
+    } catch (e) {
+        res.end("User not found")
+    }
 });
 
 app.listen(port, () => {
@@ -33,7 +37,7 @@ async function fetchRecentTracks(user) {
                 resolve(JSON.parse(data));
             });
         }).on("error", (err) => {
-            console.log("Error: " + err.message);
+            console.log(err.message);
         });
     });
 }
