@@ -88,8 +88,8 @@ function getHTML(artist, track, cover, queries) {
         }
     }
     return `
-    <svg width="480" height="133" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <foreignObject width="480" height="133">
+    <svg width="386" height="124" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <foreignObject width="386" height="124">
         <body xmlns="http://www.w3.org/1999/xhtml">
             <div class="main">
                 <img src="${cover}" class="cover" />
@@ -102,6 +102,8 @@ function getHTML(artist, track, cover, queries) {
             <style>
         body {
             width: fit-content;
+            padding: 0;
+            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
         }
     
