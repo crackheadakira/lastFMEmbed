@@ -14,7 +14,8 @@ app.get('/api/:user', async (req, res) => {
         let artist = track.artist["#text"];
         let trackName = track.name;
         let cover = track.image[2]["#text"];
-        res.set('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
         res.end(getHTML(artist, trackName, cover));
     } catch (e) {
         res.end("User not found")
@@ -159,3 +160,5 @@ function getHTML(artist, track, cover) {
         }
     </style>`
 }
+
+module.exports = app;
