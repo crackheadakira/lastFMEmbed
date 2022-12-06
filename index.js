@@ -160,5 +160,3 @@ function getHTML(artist, track, cover) {
         }
     </style>`
 }
-
-module.exports = app;
