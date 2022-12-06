@@ -3,12 +3,23 @@ const https = require('https');
 const port = 3000;
 
 app.get('/', async (req, res) => {
-    res.end("To use the API, please use the following format: /username")
+    let info = `To use the embed, add your username to the end of the URL like this: /username 
+    
+Optional parameters: 
+transparent - false or true (default: false)
+trackColor - hex color (default: f7f7f7)
+artistColor - hex color (default: 9f9f9f)
+
+An example using these queries:
+/crackheadakira?transparent=true&trackColor=ffffff&artistColor=000000`;
+    res.end(info)
 })
 
 app.get('/:user', async (req, res) => {
     try {
         let user = req.params.user;
+        let queries = req.query;
+
         let response = await fetchRecentTracks(user);
         let track = response.recenttracks.track[0];
         let artist = track.artist["#text"];
@@ -16,7 +27,7 @@ app.get('/:user', async (req, res) => {
         let cover = track.image[2]["#text"];
         res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(getHTML(artist, trackName, await getCoverBase64(cover)));
+        res.end(getHTML(artist, trackName, await getCoverBase64(cover), queries));
     } catch (e) {
         console.log(e);
         res.end("User not found")
@@ -61,20 +72,34 @@ async function getCoverBase64(url) {
     });
 }
 
-function getHTML(artist, track, cover) {
+function getHTML(artist, track, cover, queries) {
+    let bgColor = "#181414";
+    let trackColor = "f7f7f7";
+    let artistColor = "9f9f9f";
+    if (queries !== {}) {
+        if (queries.transparent === "true") {
+            bgColor = "transparent";
+        }
+        if (queries.hasOwnProperty("trackColor") && queries.trackColor.length === 6) {
+            trackColor = queries.trackColor;
+        }
+        if (queries.hasOwnProperty("artistColor") && queries.artistColor.length === 6) {
+            artistColor = queries.artistColor;
+        }
+    }
     return `
     <svg width="480" height="133" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <foreignObject width="480" height="133">
-    <body xmlns="http://www.w3.org/1999/xhtml">
-        <div class="main">
-            <img src="${cover}" class="cover" />
-            <div class="content">
-                <div class="song">${track}</div>
-                <div class="artist">${artist}</div>
+        <body xmlns="http://www.w3.org/1999/xhtml">
+            <div class="main">
+                <img src="${cover}" class="cover" />
+                <div class="content">
+                    <div class="song">${track}</div>
+                    <div class="artist">${artist}</div>
+                </div>
             </div>
-        </div>
-    
-    <style>
+
+            <style>
         body {
             width: fit-content;
             font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
@@ -89,8 +114,8 @@ function getHTML(artist, track, cover) {
             align-items: center;
             border-radius: 5px;
             padding: 10px;
-            background-color: #181414;
-            border: 1px solid #181414;
+            background-color: ${bgColor};
+            border: 1px solid ${bgColor};
         }
     
         .currentStatus {
@@ -114,7 +139,7 @@ function getHTML(artist, track, cover) {
     
         .song {
             width: 250px;
-            color: #f7f7f7;
+            color: #${trackColor};
             overflow: hidden;
             margin-top: 3px;
             text-align: center;
@@ -124,7 +149,7 @@ function getHTML(artist, track, cover) {
     
         .artist {
             width: 250px;
-            color: #9f9f9f;
+            color: #${artistColor};
             margin-top: 4px;
             text-align: center;
             margin-bottom: 5px;
@@ -140,36 +165,11 @@ function getHTML(artist, track, cover) {
             box-shadow: rgba(71, 95, 139, 0.3) 0px 3px 8px;
         }
     
-        #bars {
-            width: 40px;
-            height: 30px;
-            bottom: 23px;
-            position: absolute;
-            margin: -20px 0 0 0px;
-        }
-    
-        .bar {
-            width: 3px;
-            bottom: 1px;
-            height: 3px;
-            position: absolute;
-            background: #1DB954cc;
-            animation: sound 0ms -800ms linear infinite alternate;
-        }
-    
-        .spotify-logo {
-            position: fixed;
-            right: 20px;
-            top: 10px;
-            width: 25px;
-            filter: invert(1);
-        }
-    
         a {
             text-decoration: none;
         }
     </style>
-    </body>
+        </body>
     </foreignObject>
-    </svg>`
+</svg>`
 }
