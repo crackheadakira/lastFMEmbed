@@ -14,7 +14,7 @@ app.get('/:user', async (req, res) => {
         let artist = track.artist["#text"];
         let trackName = track.name;
         let cover = track.image[2]["#text"];
-        res.setHeader('Content-Type', 'application/xhtml+xml');
+        res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
         res.end(getHTML(artist, trackName, cover));
     } catch (e) {
