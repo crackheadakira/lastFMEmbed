@@ -17,8 +17,9 @@ app.get('/:user', async (req, res) => {
         let cover = track.image[2]["#text"];
         res.setHeader('Content-Type', 'image/png');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        const image = await nodeHtmlToImage({ html: getHTML(artist, trackName, cover) });
-        res.end(image, 'binary');
+        nodeHtmlToImage({ html: getHTML(artist, trackName, cover) }).then(image => {
+            res.end(image, 'binary');
+        });
     } catch (e) {
         res.end("User not found")
     }
