@@ -13,7 +13,7 @@ bgColor - hex color, will not work with transparency (default: 181414)
 showStatus - false or true (default: false)
 previousTracks - number of tracks to show (default: 1)
 statusBar - false or true, shows a bar as status instead of text (default: false)
-statusbarColor - hex color, allows you to choose the color for your status bar (default: 1c8b43)
+statusBarColor - hex color, allows you to choose the color for your status bar (default: 1c8b43)
 
 An example using these queries:
 /crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
@@ -86,7 +86,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
             ${showStatus && !statusBar ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
             <div class="song">${track.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>
             <div class="artist">${artist}</div>
-            ${statusBar ? `<div id="bars">${makeBars(30)}</div>` : ""}
+            ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
     </div>`;
 }
