@@ -1,5 +1,5 @@
 const app = require('express')();
-const axios = require('axios');
+const https = require('https');
 const port = 3000;
 
 app.get('/', async (req, res) => {
@@ -45,18 +45,34 @@ function fetchRecentTracks(user, amount = 1) {
     amount = Math.min(Math.max(amount, 1), 4);
     let requestURL = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" + user + "&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=" + amount;
     return new Promise((resolve) => {
-        resolve(axios.get(requestURL).then((response) => {
-            return response.data
-        }));
+        https.get(requestURL, (resp) => {
+            let data = '';
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => {
+                resolve(JSON.parse(data));
+            });
+        }).on("error", (err) => {
+            console.log(err.message);
+        });
     });
 }
 
 function getCoverBase64(url) {
     return new Promise((resolve) => {
-        resolve(axios.get(url, { responseType: 'arraybuffer' }).then((response) => {
-            let buffer = Buffer.from(response.data, 'binary').toString("base64");
-            return `data:${response.headers["content-type"]};base64,${buffer}`;
-        }));
+        https.get(url, (resp) => {
+            resp.setEncoding('base64');
+            let data = "data:" + resp.headers["content-type"] + ";base64,";
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => {
+                resolve(data);
+            });
+        }).on("error", (err) => {
+            console.log(err.message);
+        });
     });
 }
 
@@ -130,7 +146,6 @@ async function getHTML(data, queries) {
             border-radius: 5px;
             padding: 10px;
             background-color: ${bgColor};
-            border: 1px solid ${bgColor};
             margin-bottom: 3px;
         }
     
@@ -178,7 +193,6 @@ async function getHTML(data, queries) {
             width: 100px;
             height: 100px;
             border-radius: 5px;
-            border: 1px solid ${bgColor};
         }
     
         a {
