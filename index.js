@@ -41,7 +41,7 @@ app.listen(port, () => console.log(`Listening on port ${port}`));
 
 module.exports = app;
 
-function fetchRecentTracks(user, amount = 1) {
+function fetchRecentTracks(user, amount) {
     amount = Math.min(Math.max(amount, 1), 4);
     let requestURL = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" + user + "&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=" + amount;
     return new Promise((resolve) => {
@@ -91,7 +91,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false) {
 async function getHTML(data, queries) {
     let html = "";
 
-    let amountOfTrack = queries?.previousTracks ? data.length : 1;
+    let amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
     let showStatus = queries?.showStatus === "true";
 
     for (let i = 0; i < amountOfTrack; i++) {
