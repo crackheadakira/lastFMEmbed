@@ -82,7 +82,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false) {
         <img src="${cover}" class="cover" />
         <div class="content">
             ${showStatus ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
-            <div class="song">${track}</div>
+            <div class="song">${track.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>
             <div class="artist">${artist}</div>
         </div>
     </div>`;
