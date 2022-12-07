@@ -1,4 +1,5 @@
 const app = require('express')();
+const axios = require('axios');
 const https = require('https');
 const port = 3000;
 
@@ -10,25 +11,27 @@ transparent - false or true (default: false)
 trackColor - hex color (default: f7f7f7)
 artistColor - hex color (default: 9f9f9f)
 bgColor - hex color, will not work with transparency (default: 181414)
+showStatus - false or true (default: false)
+previousTracks - number of tracks to show (default: 1)
 
 An example using these queries:
-/crackheadakira?transparent=true&trackColor=ffffff&artistColor=000000&`;
+/crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
     res.end(info)
 })
 
 app.get('/:user', async (req, res) => {
     try {
+
         let user = req.params.user;
         let queries = req.query;
+        let trackAmount = queries?.previousTracks ? parseInt(queries.previousTracks) - 1 : 1;
 
-        let response = await fetchRecentTracks(user);
-        let track = response.recenttracks.track[0];
-        let artist = track.artist["#text"];
-        let trackName = track.name;
-        let cover = track.image[2]["#text"];
+        let response = await fetchRecentTracks(user, trackAmount);
+        let track = response.recenttracks.track;
         res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(getHTML(artist, trackName, await getCoverBase64(cover), queries));
+        res.end(await getHTML(track, queries));
+
     } catch (e) {
         console.log(e);
         res.end("User not found")
@@ -39,41 +42,51 @@ app.listen(port, () => console.log(`Listening on port ${port}`));
 
 module.exports = app;
 
-async function fetchRecentTracks(user) {
-    let requestURL = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" + user + "&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=1";
+function fetchRecentTracks(user, amount = 1) {
+    amount = Math.min(Math.max(amount, 1), 4);
+    let requestURL = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" + user + "&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=" + amount;
     return new Promise((resolve) => {
-        https.get(requestURL, (resp) => {
-            let data = '';
-            resp.on('data', (chunk) => {
-                data += chunk;
-            });
-            resp.on('end', () => {
-                resolve(JSON.parse(data));
-            });
-        }).on("error", (err) => {
-            console.log(err.message);
-        });
+        resolve(axios.get(requestURL).then((response) => {
+            return response.data
+        }));
     });
 }
 
-async function getCoverBase64(url) {
+function getCoverBase64(url) {
     return new Promise((resolve) => {
-        https.get(url, (resp) => {
-            resp.setEncoding('base64');
-            let data = "data:" + resp.headers["content-type"] + ";base64,";
-            resp.on('data', (chunk) => {
-                data += chunk;
-            });
-            resp.on('end', () => {
-                resolve(data);
-            });
-        }).on("error", (err) => {
-            console.log(err.message);
-        });
+        resolve(axios.get(url, { responseType: 'arraybuffer' }).then((response) => {
+            let buffer = Buffer.from(response.data, 'binary').toString("base64");
+            return `data:${response.headers["content-type"]};base64,${buffer}`;
+        }));
     });
 }
 
-function getHTML(artist, track, cover, queries) {
+function htmlDiv(artist, track, cover, past = false, showStatus = false) {
+    return `
+    <div class="main">
+        <img src="${cover}" class="cover" />
+        <div class="content">
+            ${showStatus ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
+            <div class="song">${track}</div>
+            <div class="artist">${artist}</div>
+        </div>
+    </div>`;
+}
+
+async function getHTML(data, queries) {
+    let html = "";
+
+    let amountOfTrack = queries?.previousTracks ? data.length : 1;
+    let showStatus = queries?.showStatus === "true";
+
+    for (let i = 0; i < amountOfTrack; i++) {
+        let artist = data[i].artist["#text"];
+        let trackName = data[i].name;
+        let cover = await getCoverBase64(data[i].image[2]["#text"]);
+        let nowPlaying = data[i]["@attr"]?.nowplaying;
+        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus);
+    }
+
     let bgColor = "#181414";
     let trackColor = "f7f7f7";
     let artistColor = "9f9f9f";
@@ -91,17 +104,14 @@ function getHTML(artist, track, cover, queries) {
             bgColor = "#" + queries.bgColor;
         }
     }
+
+    let height = 124 * data.length + (data.length > 0 ? (3 * data.length) : 0);
+
     return `
-    <svg width="386" height="124" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <foreignObject width="386" height="124">
+    <svg width="386" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <foreignObject width="386" height="${height}">
         <body xmlns="http://www.w3.org/1999/xhtml">
-            <div class="main">
-                <img src="${cover}" class="cover" />
-                <div class="content">
-                    <div class="song">${track}</div>
-                    <div class="artist">${artist}</div>
-                </div>
-            </div>
+        ${html}
 
             <style>
         body {
@@ -122,6 +132,7 @@ function getHTML(artist, track, cover, queries) {
             padding: 10px;
             background-color: ${bgColor};
             border: 1px solid ${bgColor};
+            margin-bottom: 3px;
         }
     
         .currentStatus {
