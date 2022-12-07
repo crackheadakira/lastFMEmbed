@@ -1,6 +1,5 @@
 const app = require('express')();
 const axios = require('axios');
-const https = require('https');
 const port = 3000;
 
 app.get('/', async (req, res) => {
