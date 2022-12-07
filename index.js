@@ -3,6 +3,7 @@ const https = require('https');
 const port = 3000;
 
 app.get('/', async (req, res) => {
+    console.log("Info page");
     let info = `To use the embed, add your username to the end of the URL like this: /username 
     
 Optional parameters: 
@@ -22,7 +23,8 @@ An example using these queries:
 
 app.get('/:user', async (req, res) => {
     try {
-
+        if (req.params.user === "favicon.ico") return;
+        console.log("Requst Page");
         let user = req.params.user;
         let queries = req.query;
         let trackAmount = queries?.previousTracks ? parseInt(queries.previousTracks) - 1 : 1;
