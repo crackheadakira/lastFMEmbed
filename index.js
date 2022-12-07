@@ -120,11 +120,11 @@ async function getHTML(data, queries) {
         }
     }
 
-    let height = 124 * data.length + (data.length > 0 ? (3 * data.length) : 0);
+    let height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
 
     return `
-    <svg width="386" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <foreignObject width="386" height="${height}">
+    <svg width="382" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <foreignObject width="382" height="${height}">
         <body xmlns="http://www.w3.org/1999/xhtml">
         ${html}
 
