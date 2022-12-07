@@ -12,6 +12,8 @@ artistColor - hex color (default: 9f9f9f)
 bgColor - hex color, will not work with transparency (default: 181414)
 showStatus - false or true (default: false)
 previousTracks - number of tracks to show (default: 1)
+statusBar - false or true, shows a bar as status instead of text (default: false)
+statusbarColor - hex color, allows you to choose the color for your status bar (default: 1c8b43)
 
 An example using these queries:
 /crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
@@ -76,16 +78,36 @@ function getCoverBase64(url) {
     });
 }
 
-function htmlDiv(artist, track, cover, past = false, showStatus = false) {
+function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false) {
     return `
     <div class="main">
         <img src="${cover}" class="cover" />
         <div class="content">
-            ${showStatus ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
+            ${showStatus && !statusBar ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
             <div class="song">${track.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>
             <div class="artist">${artist}</div>
+            ${statusBar ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
     </div>`;
+}
+
+function makeBars(amount) {
+    let html = "";
+    for (let i = 0; i < amount; i++) {
+        html += `<div class="bar"></div>`;
+    }
+    return html;
+}
+
+function getBarCSS(amount) {
+    let css = "";
+    for (let i = 0; i < amount; i++) {
+        css += `.bar:nth-child(${i + 1}) {
+            animation-duration: ${Math.random() * (3200 - 1000) + 1000}ms;
+            left: ${i * 4}px;
+        }`;
+    }
+    return css;
 }
 
 async function getHTML(data, queries) {
@@ -93,18 +115,21 @@ async function getHTML(data, queries) {
 
     let amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
     let showStatus = queries?.showStatus === "true";
+    let statusBar = showStatus ? queries?.statusBar === "true" : false;
+    let bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
 
     for (let i = 0; i < amountOfTrack; i++) {
         let artist = data[i].artist["#text"];
         let trackName = data[i].name;
         let cover = await getCoverBase64(data[i].image[2]["#text"]);
         let nowPlaying = data[i]["@attr"]?.nowplaying;
-        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus);
+        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar);
     }
 
     let bgColor = "#181414";
     let trackColor = "f7f7f7";
     let artistColor = "9f9f9f";
+    let statusBarColor = "#1c8b43";
     if (queries !== {}) {
         if (queries.transparent === "true") {
             bgColor = "transparent";
@@ -117,6 +142,9 @@ async function getHTML(data, queries) {
         }
         if (queries.hasOwnProperty("bgColor") && queries.bgColor.length === 6 && queries.transparent !== "true") {
             bgColor = "#" + queries.bgColor;
+        }
+        if (queries.hasOwnProperty("statusBarColor") && queries.statusBarColor.length === 6 && statusBar) {
+            statusBarColor = "#" + queries.statusBarColor;
         }
     }
 
@@ -137,6 +165,7 @@ async function getHTML(data, queries) {
         }
     
         .main {
+            position: relative;
             display: flex;
             width: fit-content;
             height: fit-content;
@@ -164,6 +193,10 @@ async function getHTML(data, queries) {
         }
     
         .content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             width: fit-content;
             height: fit-content;
         }
@@ -197,6 +230,34 @@ async function getHTML(data, queries) {
     
         a {
             text-decoration: none;
+        }
+
+        #bars {
+            position: relative;
+            width: 120px;
+            height: 20px;
+        }
+
+        .bar {
+            position: absolute;
+            bottom: 1px;
+            width: 3px;
+            height: 3px;
+            background: ${statusBarColor};
+            animation: sound 0ms -3200ms ease-in-out infinite alternate;
+        }
+
+        ${bars}
+
+        @keyframes sound {
+            0% {
+                height: 3px;
+                opacity: 0.35;
+            }
+            100% {
+                height: 15px;
+                opacity: 0.95;
+            }
         }
     </style>
         </body>
