@@ -16,7 +16,7 @@ previousTracks - number of tracks to show (default: 1)
 statusBar - false or true, shows a bar as status instead of text (default: false)
 statusBarColor - hex color, allows you to choose the color for your status bar (default: 1c8b43)
 
-An example using these queries:
+An example using these parameters:
 /crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
     res.end(info)
 })
