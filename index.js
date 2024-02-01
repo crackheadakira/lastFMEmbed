@@ -96,7 +96,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
         <img src="${cover}" class="cover" />
         <div class="content">
             ${showStatus && !statusBar ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
-            <div class="song">${track.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>
+            <div class="song">${htmlSpecialChars(track)}</div>
             <div class="artist">${htmlSpecialChars(artist)}</div>
             ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
