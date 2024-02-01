@@ -142,7 +142,7 @@ async function getHTML(data, queries) {
     let trackColor = "f7f7f7";
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
-    if (Object.keys(queries).lengtht > 0) {
+    if (Object.keys(queries).length > 0) {
         if (queries.transparent === "true") {
             bgColor = "transparent";
         }
