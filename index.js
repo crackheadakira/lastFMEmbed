@@ -17,14 +17,13 @@ statusBar - false or true, shows a bar as status instead of text (default: false
 statusBarColor - hex color, allows you to choose the color for your status bar (default: 1c8b43)
 
 An example using these parameters:
-/crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
+/user/crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
     res.end(info)
 })
 
-app.get('/:user', async (req, res) => {
+app.get('/user/:user', async (req, res) => {
     try {
-        if (req.params.user === "favicon.ico") return;
-        console.log("Requst Page");
+        console.log("Request Page");
         let user = req.params.user;
         let queries = req.query;
         let trackAmount = queries?.previousTracks ? parseInt(queries.previousTracks) - 1 : 1;
@@ -37,7 +36,7 @@ app.get('/:user', async (req, res) => {
 
     } catch (e) {
         console.log(e);
-        res.end("User not found")
+        res.end("Error in retrieving the user, either the user doesn't exist or there was an error on our side!")
     }
 });
 
@@ -80,6 +79,17 @@ function getCoverBase64(url) {
     });
 }
 
+// Needed for encoding special characters in XML
+function htmlSpecialChars(unsafe) {
+    return unsafe
+    .replaceAll(`&`, "&amp;")
+    .replaceAll(`<`, "&lt;")
+    .replaceAll(`>`, "&gt;")
+    .replaceAll(`"`, "&quot;")
+    .replaceAll(`'`, "&apos;");
+}
+
+
 function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false) {
     return `
     <div class="main">
@@ -87,7 +97,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
         <div class="content">
             ${showStatus && !statusBar ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
             <div class="song">${track.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</div>
-            <div class="artist">${artist}</div>
+            <div class="artist">${htmlSpecialChars(artist)}</div>
             ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
     </div>`;
@@ -115,16 +125,16 @@ function getBarCSS(amount) {
 async function getHTML(data, queries) {
     let html = "";
 
-    let amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
-    let showStatus = queries?.showStatus === "true";
-    let statusBar = showStatus ? queries?.statusBar === "true" : false;
-    let bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
+    const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
+    const showStatus = queries?.showStatus === "true";
+    const statusBar = showStatus ? queries?.statusBar === "true" : false;
+    const bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
 
     for (let i = 0; i < amountOfTrack; i++) {
-        let artist = data[i].artist["#text"];
-        let trackName = data[i].name;
-        let cover = await getCoverBase64(data[i].image[2]["#text"]);
-        let nowPlaying = data[i]["@attr"]?.nowplaying;
+        const artist = data[i].artist["#text"];
+        const trackName = data[i].name;
+        const cover = await getCoverBase64(data[i].image[2]["#text"]);
+        const nowPlaying = data[i]["@attr"]?.nowplaying;
         html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar);
     }
 
@@ -132,7 +142,7 @@ async function getHTML(data, queries) {
     let trackColor = "f7f7f7";
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
-    if (queries !== {}) {
+    if (Object.keys(queries).lengtht > 0) {
         if (queries.transparent === "true") {
             bgColor = "transparent";
         }
@@ -150,7 +160,7 @@ async function getHTML(data, queries) {
         }
     }
 
-    let height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
+    const height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
 
     return `
     <svg width="382" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
