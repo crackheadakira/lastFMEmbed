@@ -1,13 +1,30 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="./tailwind.css" rel="stylesheet" type="text/css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./tailwind.css" rel="stylesheet" type="text/css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
 </head>
-<body>
-  <h1 class="text-3xl font-bold underline">
-    Hello world!
-  </h1>
+<body class="bg-background text-text h-screen flex justify-center items-center font-inter-tight">
+    <div id="app" class="flex flex-col p-4 w-fit h-816px items-center gap-4">
+        <div id="username" class="flex items-center h-fit">
+            <!--User Icon-->
+            <svg class="relative left-7 h-4 fill-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"/></svg>
+            <input type="text" class="rounded-full p-2 px-4 w-64 bg-input text-text text-center" placeholder="Enter username..." v-model="username">
+        </div>
+        <div id="embedPreview" class="w-full px-4">
+            <h2 class="text-left font-medium text-accent text-lg">Preview</h2>
+            <div id="embed" class="bg-embedBackground h-embed w-embed rounded-md flex items-center gap-5 px-2">
+                <div id="cover" class="h-24 aspect-square bg-accent rounded-md"></div>
+                <div id="content" class="flex flex-col justify-center items-center w-full text-ellipsis">
+                    <div id="song" class="font-medium">Natural Ability</div>
+                    <div id="artist" class="text-sm text-accent">The Crane</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

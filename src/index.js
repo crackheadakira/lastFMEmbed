@@ -8,8 +8,6 @@ const port = 3000;
 app.use(express.static(path.join(__dirname, 'css')));
 
 app.get('/', async (req, res) => {
-    console.log("Editor");
-
     res.sendFile(path.join(__dirname + '/index.html'));
 })
 
@@ -160,11 +158,15 @@ async function getHTML(data, queries) {
         ${html}
 
             <style>
+        @import url(${htmlSpecialChars("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=swap")});
+
         body {
             width: fit-content;
             padding: 0;
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+            font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+            -webkit-font-smoothing: auto;
+            -moz-osx-font-smoothing: auto;
         }
     
         .main {
@@ -179,14 +181,6 @@ async function getHTML(data, queries) {
             padding: 10px;
             background-color: ${bgColor};
             margin-bottom: 3px;
-        }
-    
-        .currentStatus {
-            float: left;
-            font-size: 24px;
-            position: static;
-            margin-top: -5px;
-            margin-left: 10px;
         }
     
         .art {
@@ -223,6 +217,7 @@ async function getHTML(data, queries) {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
+            font-size: 14px;
         }
     
         .cover {

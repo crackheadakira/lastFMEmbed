@@ -5,7 +5,8 @@
   "main": "./src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "css": "npx tailwindcss -i ./src/css/boiler.css -o ./src/css/tailwind.css --watch",
+    "css": "npx tailwindcss -i ./src/css/boiler.css -o ./src/css/tailwind.css",
+    "css:prod": "npx tailwindcss -i ./src/css/boiler.css -o ./src/css/tailwind.css --minify",
     "dev": "node ./src/index.js"
   },
   "repository": {
