@@ -1,29 +1,21 @@
-const app = require('express')();
+const express = require('express');
 const https = require('https');
+const path = require('path');
+
+const app = express();
 const port = 3000;
 
-app.get('/', async (req, res) => {
-    console.log("Info page");
-    let info = `To use the embed, add your username to the end of the URL like this: /username 
-    
-Optional parameters: 
-transparent - false or true (default: false)
-trackColor - hex color (default: f7f7f7)
-artistColor - hex color (default: 9f9f9f)
-bgColor - hex color, will not work with transparency (default: 181414)
-showStatus - false or true (default: false)
-previousTracks - number of tracks to show (default: 1)
-statusBar - false or true, shows a bar as status instead of text (default: false)
-statusBarColor - hex color, allows you to choose the color for your status bar (default: 1c8b43)
+app.use(express.static(path.join(__dirname, 'css')));
 
-An example using these parameters:
-/user/crackheadakira?transparent=true&trackColor=000000&artistColor=000000&showStatus=true&previousTracks=2`;
-    res.end(info)
+app.get('/', async (req, res) => {
+    console.log("Editor");
+
+    res.sendFile(path.join(__dirname + '/index.html'));
 })
 
 app.get('/user/:user', async (req, res) => {
     try {
-        console.log("Request Page");
+        console.log(`User: ${req.params.user}`)
         let user = req.params.user;
         let queries = req.query;
         let trackAmount = queries?.previousTracks ? parseInt(queries.previousTracks) - 1 : 1;
@@ -46,7 +38,7 @@ module.exports = app;
 
 function fetchRecentTracks(user, amount) {
     amount = Math.min(Math.max(amount, 1), 4);
-    let requestURL = "https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=" + user + "&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=" + amount;
+    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=${amount}`;
     return new Promise((resolve) => {
         https.get(requestURL, (resp) => {
             let data = '';
@@ -142,22 +134,21 @@ async function getHTML(data, queries) {
     let trackColor = "f7f7f7";
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
-    if (Object.keys(queries).lengtht > 0) {
-        if (queries.transparent === "true") {
+    if (Object.keys(queries).length > 0) {
+        if (queries.transparent === "true")
             bgColor = "transparent";
-        }
-        if (queries.hasOwnProperty("trackColor") && queries.trackColor.length === 6) {
+
+        if (queries.hasOwnProperty("trackColor") && queries.trackColor.length === 6)
             trackColor = queries.trackColor;
-        }
-        if (queries.hasOwnProperty("artistColor") && queries.artistColor.length === 6) {
+
+        if (queries.hasOwnProperty("artistColor") && queries.artistColor.length === 6)
             artistColor = queries.artistColor;
-        }
-        if (queries.hasOwnProperty("bgColor") && queries.bgColor.length === 6 && queries.transparent !== "true") {
-            bgColor = "#" + queries.bgColor;
-        }
-        if (queries.hasOwnProperty("statusBarColor") && queries.statusBarColor.length === 6 && statusBar) {
-            statusBarColor = "#" + queries.statusBarColor;
-        }
+
+        if (queries.hasOwnProperty("bgColor") && queries.bgColor.length === 6 && queries.transparent !== "true")
+            bgColor = `#${queries.bgColor}`
+        
+        if (queries.hasOwnProperty("statusBarColor") && queries.statusBarColor.length === 6 && statusBar)
+            statusBarColor = `#${queries.statusBarColor}`
     }
 
     const height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
