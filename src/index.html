@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./tailwind.css" rel="stylesheet" type="text/css">
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <title>last.FM embed editor</title>
+</head>
+<body class="bg-background text-accent h-screen flex justify-center items-center font-inter">
+    <div id="app" class="flex flex-col p-4 w-fit h-fit items-center gap-8">
+        <div id="username" class="relative flex items-center justify-center h-fit w-full">
+            <!--User Icon-->
+            <svg class="absolute h-4 left-6 fill-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"/></svg>
+            <input type="text" class="appearance-none rounded-full p-4 h-10 w-full bg-input font-medium text-sm text-center" placeholder="Enter last.FM user..." name="username">
+        </div>
+        <div id="embed_preview" class="w-full px-4">
+            <h2 class="text-left font-semibold text-lg pb-1">Preview</h2>
+            <div id="embed" class="bg-embedBackground h-embed w-embed rounded-md flex items-center gap-5 px-2">
+                <img id="cover" src="/22.png" class="h-24 aspect-square rounded-md"></img>
+                <div id="content" class="flex flex-col justify-center items-center w-full truncate">
+                    <div id="status" class="text-text hidden">Listened to</div>
+                    <div id="song" class="font-medium text-text">Hooka</div>
+                    <div id="artist" class="text-sm">HYUKOH</div>
+                    <div id="bars" class="relative hidden w-28 h-5"></div>
+                </div>
+            </div>
+        </div>
+        <div id="settings" class="w-full px-4">
+            <h2 class="text-left text-lg pb-1 font-semibold">Settings</h2>
+            <div class="flex flex-col gap-3 text-sm font-medium">
+                <label for="previousTracks" class="text-settingName flex justify-between items-center">
+                    Tracks (max 5)
+                    <input class="bg-input text-text px-3 h-8 w-input rounded-md" type="number" name="previousTracks" value="1" min="1" max="5">
+                </label>
+                <label for="showStatus" class="text-settingName relative flex justify-between items-center">
+                    Show status
+                    <input type="checkbox" name="showStatus" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" />
+                    <span class="h-8 w-input flex items-center flex-shrink-0 ml-4 p-1 bg-toggleOff rounded-full duration-150 ease-in-out peer-checked:bg-primaryButton after:w-6 after:h-6 after:bg-text after:rounded-full after:shadow-md after:duration-150 peer-checked:after:translate-x-input after:pointer-events-none group-hover:after:translate-x-1"></span>
+                </label>
+                <label for="statusBar" class="text-settingName relative flex justify-between items-center">
+                    Show status as a bar
+                    <input type="checkbox" name="statusBar" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" />
+                    <span class="h-8 w-input flex items-center flex-shrink-0 ml-4 p-1 bg-toggleOff rounded-full duration-150 ease-in-out peer-checked:bg-primaryButton after:w-6 after:h-6 after:bg-text after:rounded-full after:shadow-md after:duration-150 peer-checked:after:translate-x-input after:pointer-events-none group-hover:after:translate-x-1"></span>
+                </label>
+                <label for="transparent" class="text-settingName relative flex justify-between items-center">
+                    Transparent background
+                    <input type="checkbox" name="transparent" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" />
+                    <span class="h-8 w-input flex items-center flex-shrink-0 ml-4 p-1 bg-toggleOff rounded-full duration-150 ease-in-out peer-checked:bg-primaryButton after:w-6 after:h-6 after:bg-text after:rounded-full after:shadow-md after:duration-150 peer-checked:after:translate-x-input after:pointer-events-none group-hover:after:translate-x-1"></span>
+                </label>
+                <label for="trackColor" class="text-settingName flex justify-between items-center">
+                    Track text color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="trackColor" value="#FFFFFF">
+                </label>
+                <label for="artistColor" class="text-settingName flex justify-between items-center">
+                    Artist text color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="artistColor" value="#9693BD">
+                </label>
+                <label for="backgroundColor" class="text-settingName flex justify-between items-center">
+                    Background color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="backgroundColor" value="#181414">
+                </label>
+                <label for="statusBarColor" class="text-settingName flex justify-between items-center">
+                    Status bar color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="statusBarColor" value="#1c8b43">
+                </label>
+            </div>
+        </div>
+        <button class="bg-primaryButton text-text w-28 h-11 rounded-md font-medium text-sm">Copy URL</button>
+    </div>
+</body>
+</html>
+
+<script>
+    const baseURL = `${window.location.href}user/`;
+    const parameters = {
+        previousTracks: "1",
+        trackColor: "FFFFFF",
+        artistColor: "9693BD",
+        backgroundColor: "181414"
+    };
+    
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', () => {
+            const query = input.name;
+            const value = (input.type === "checkbox" ? input.checked.toString() : input.value).replace("#", "");
+
+            if(query === "showStatus" && input.checked)
+                document.querySelector('#status').classList.remove('hidden');
+            else if(query === "showStatus" && !input.checked) {
+                document.querySelector('#status').classList.add('hidden');
+                document.querySelector('#bars').classList.add('hidden');
+            }
+
+            if(query === "statusBar" && input.checked && parameters["showStatus"] === "true") {
+                document.querySelector('#bars').classList.remove('hidden');
+                document.querySelector('#bars').classList.add('flex');
+
+                document.querySelector('#status').classList.add('hidden');
+            } else if(query === "statusBar" && !input.checked && parameters["showStatus"] === "true") {
+                document.querySelector('#bars').classList.add('hidden', 'flex');
+                document.querySelector('#status').classList.remove('hidden');
+            }
+
+            if(query === "transparent" && input.checked)
+                document.querySelector('#embed').style.backgroundColor = "transparent";
+            else if(query === "transparent" && !input.checked)
+                document.querySelector('#embed').style.backgroundColor = `#${parameters["backgroundColor"]}`;
+
+            if(query === "backgroundColor")
+                document.querySelector('#embed').style.backgroundColor = `#${value}`;
+            if(query === "trackColor")
+                document.querySelector('#song').style.color = `#${value}`;
+            if(query === "artistColor")
+                document.querySelector('#artist').style.color = `#${value}`;
+            if(query === "statusBarColor")
+                document.querySelectorAll('.animate-sound').forEach(bar => bar.style.backgroundColor = `#${value}`);
+                
+            if(query !== "username")
+                parameters[query] = value;
+
+            if(parameters[query] === "false")
+                delete parameters[query];
+        })
+    });
+
+    for(let i = 0; i < 30; i++) {
+        const bar = document.createElement('div');
+        bar.style.backgroundColor = "#1c8b43";
+        bar.classList.add('bar', 'animate-sound');
+        bar.style.animationDuration = `${Math.random() * (3200 - 1000) + 1000}ms`;
+        bar.style.left = `${i * 4}px`;
+        document.querySelector('#bars').appendChild(bar);
+    }
+
+    document.querySelector('button').addEventListener('click', () => {
+        const buttonURL = `${baseURL}${document.querySelector('input[name="username"]').value}?${Object.keys(parameters).map(key => `${key}=${parameters[key]}`).join('&')}`;
+        console.log(buttonURL);
+        navigator.clipboard.writeText(buttonURL);
+    });
+</script>
