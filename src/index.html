@@ -61,6 +61,10 @@
                     Background color
                     <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="backgroundColor" value="#181414">
                 </label>
+                <label for="statusBarColor" class="text-settingName flex justify-between items-center">
+                    Status bar color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="statusBarColor" value="#1c8b43">
+                </label>
             </div>
         </div>
         <button class="bg-primaryButton text-text w-28 h-11 rounded-md font-medium text-sm">Copy URL</button>
@@ -70,7 +74,12 @@
 
 <script>
     const baseURL = `${window.location.href}user/`;
-    const parameters = {};
+    const parameters = {
+        previousTracks: "1",
+        trackColor: "FFFFFF",
+        artistColor: "9693BD",
+        backgroundColor: "181414"
+    };
     
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', () => {
@@ -93,6 +102,20 @@
                 document.querySelector('#bars').classList.add('hidden', 'flex');
                 document.querySelector('#status').classList.remove('hidden');
             }
+
+            if(query === "transparent" && input.checked)
+                document.querySelector('#embed').style.backgroundColor = "transparent";
+            else if(query === "transparent" && !input.checked)
+                document.querySelector('#embed').style.backgroundColor = `#${parameters["backgroundColor"]}`;
+
+            if(query === "backgroundColor")
+                document.querySelector('#embed').style.backgroundColor = `#${value}`;
+            if(query === "trackColor")
+                document.querySelector('#song').style.color = `#${value}`;
+            if(query === "artistColor")
+                document.querySelector('#artist').style.color = `#${value}`;
+            if(query === "statusBarColor")
+                document.querySelectorAll('.animate-sound').forEach(bar => bar.style.backgroundColor = `#${value}`);
                 
             if(query !== "username")
                 parameters[query] = value;
