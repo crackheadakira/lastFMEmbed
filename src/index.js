@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, 'css')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', async (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
@@ -158,13 +158,18 @@ async function getHTML(data, queries) {
         ${html}
 
             <style>
-        @import url(${htmlSpecialChars("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=swap")});
+        @import url("https://rsms.me/inter/inter.css");
+
+        :root {
+            font-family: Inter, sans-serif;
+            font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+        }
 
         body {
             width: fit-content;
             padding: 0;
             margin: 0;
-            font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
             -webkit-font-smoothing: auto;
             -moz-osx-font-smoothing: auto;
         }
@@ -206,6 +211,7 @@ async function getHTML(data, queries) {
             text-align: center;
             white-space: nowrap;
             text-overflow: ellipsis;
+            font-weight: 500;
         }
     
         .artist {
@@ -257,6 +263,7 @@ async function getHTML(data, queries) {
                 opacity: 0.95;
             }
         }
+        
     </style>
         </body>
     </foreignObject>

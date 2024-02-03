@@ -4,27 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="./tailwind.css" rel="stylesheet" type="text/css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <title>last.FM embed editor</title>
 </head>
-<body class="bg-background text-text h-screen flex justify-center items-center font-inter-tight">
-    <div id="app" class="flex flex-col p-4 w-fit h-816px items-center gap-4">
-        <div id="username" class="flex items-center h-fit">
+<body class="bg-background text-accent h-screen flex justify-center items-center font-inter">
+    <div id="app" class="flex flex-col p-4 w-fit h-fit items-center gap-8">
+        <div id="username" class="relative flex items-center justify-center h-fit w-full">
             <!--User Icon-->
-            <svg class="relative left-7 h-4 fill-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"/></svg>
-            <input type="text" class="rounded-full p-2 px-4 w-64 bg-input text-text text-center" placeholder="Enter username..." v-model="username">
+            <svg class="absolute h-4 left-6 fill-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"/></svg>
+            <input type="text" class="appearance-none rounded-full p-4 h-10 w-full bg-input font-medium text-sm text-center" placeholder="Enter last.FM user..." v-model="username">
         </div>
-        <div id="embedPreview" class="w-full px-4">
-            <h2 class="text-left font-medium text-accent text-lg">Preview</h2>
+        <div id="embed_preview" class="w-full px-4">
+            <h2 class="text-left font-semibold text-lg pb-1">Preview</h2>
             <div id="embed" class="bg-embedBackground h-embed w-embed rounded-md flex items-center gap-5 px-2">
-                <div id="cover" class="h-24 aspect-square bg-accent rounded-md"></div>
-                <div id="content" class="flex flex-col justify-center items-center w-full text-ellipsis">
-                    <div id="song" class="font-medium">Natural Ability</div>
-                    <div id="artist" class="text-sm text-accent">The Crane</div>
+                <img id="cover" src="/22.png" class="h-24 aspect-square rounded-md"></img>
+                <div id="content" class="flex flex-col justify-center items-center w-full truncate">
+                    <div id="song" class="font-medium text-text">Hooka</div>
+                    <div id="artist" class="text-sm">HYUKOH</div>
                 </div>
             </div>
         </div>
+        <div id="settings" class="w-full px-4">
+            <h2 class="text-left text-lg pb-1 font-semibold">Settings</h2>
+            <div class="flex flex-col gap-3 text-sm font-medium">
+                <label for="tracks" class="text-settingName flex justify-between items-center">
+                    Tracks (max 5)
+                    <input class="bg-input text-text px-3 h-8 w-input rounded-md" type="number" name="tracks" value="1" min="1" max="5">
+                </label>
+                <label for="show_status" class="text-settingName relative flex justify-between items-center">
+                    Show status
+                    <input type="checkbox" name="show_status" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" />
+                    <span class="h-8 w-input flex items-center flex-shrink-0 ml-4 p-1 bg-toggleOff rounded-full duration-150 ease-in-out peer-checked:bg-primaryButton after:w-6 after:h-6 after:bg-text after:rounded-full after:shadow-md after:duration-150 peer-checked:after:translate-x-input after:pointer-events-none group-hover:after:translate-x-1"></span>
+                </label>
+                <label for="show_status_bar" class="text-settingName relative flex justify-between items-center">
+                    Show status as a bar
+                    <input type="checkbox" name="show_status_bar" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" />
+                    <span class="h-8 w-input flex items-center flex-shrink-0 ml-4 p-1 bg-toggleOff rounded-full duration-150 ease-in-out peer-checked:bg-primaryButton after:w-6 after:h-6 after:bg-text after:rounded-full after:shadow-md after:duration-150 peer-checked:after:translate-x-input after:pointer-events-none group-hover:after:translate-x-1"></span>
+                </label>
+                <label for="transparent_background" class="text-settingName relative flex justify-between items-center">
+                    Transparent background
+                    <input type="checkbox" name="transparent_background" class="absolute left-1/2 -translate-x-1/2 w-full h-full peer appearance-none rounded-md" />
+                    <span class="h-8 w-input flex items-center flex-shrink-0 ml-4 p-1 bg-toggleOff rounded-full duration-150 ease-in-out peer-checked:bg-primaryButton after:w-6 after:h-6 after:bg-text after:rounded-full after:shadow-md after:duration-150 peer-checked:after:translate-x-input after:pointer-events-none group-hover:after:translate-x-1"></span>
+                </label>
+                <label for="track_color" class="text-settingName flex justify-between items-center">
+                    Track text color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="track_color" value="#FFFFFF">
+                </label>
+                <label for="artist_color" class="text-settingName flex justify-between items-center">
+                    Artist text color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="artist_color" value="#9693BD">
+                </label>
+                <label for="background_color" class="text-settingName flex justify-between items-center">
+                    Background color
+                    <input class="bg-input p-2 h-8 w-input rounded-md" type="color" name="background_color" value="#181414">
+                </label>
+            </div>
+        </div>
+        <button class="bg-primaryButton text-text w-28 h-11 rounded-md font-medium text-sm">Copy URL</button>
     </div>
 </body>
 </html>
+
+<script>
+ 
+</script>
