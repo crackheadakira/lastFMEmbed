@@ -85,7 +85,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
     <div class="main">
         <img src="${cover}" class="cover" />
         <div class="content">
-            ${showStatus && !statusBar ? `<div class="song">${!past ? "Listened to" : "Listening to"}</div>` : ""}
+            ${showStatus && !statusBar ? `<div class="status">${!past ? "Listened to" : "Listening to"}</div>` : ""}
             <div class="song">${htmlSpecialChars(track)}</div>
             <div class="artist">${htmlSpecialChars(artist)}</div>
             ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
@@ -203,7 +203,7 @@ async function getHTML(data, queries) {
             height: fit-content;
         }
     
-        .song {
+        .song, .status {
             width: 250px;
             color: #${trackColor};
             overflow: hidden;
@@ -212,6 +212,10 @@ async function getHTML(data, queries) {
             white-space: nowrap;
             text-overflow: ellipsis;
             font-weight: 500;
+        }
+
+        .status {
+            font-weight: 400;
         }
     
         .artist {

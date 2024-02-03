@@ -16,6 +16,21 @@ module.exports = {
       },
       translate: {
         "input": "2.25rem",
+      },
+      keyframes: {
+        "soundWave": {
+          "0%": {
+            "height": "3px",
+            "opacity": "0.35"
+          },
+          "100%": {
+            "height": "15px",
+            "opacity": "0.95"
+          }
+        }
+      },
+      animation: {
+        "sound": "soundWave 0ms -3200ms ease-in-out infinite alternate"
       }
     },
     colors: {
@@ -29,6 +44,9 @@ module.exports = {
       embedBackground: "#181414",
     }
   },
+  safelist: [
+    "animate-sound"
+  ],
   plugins: [],
 }
 
