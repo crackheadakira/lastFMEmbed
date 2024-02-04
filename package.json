@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "css": "npx tailwindcss -i ./public/boiler.css -o ./public/tailwind.css",
     "css:prod": "npx tailwindcss -i ./public/boiler.css -o ./public/tailwind.css --minify",
-    "dev": "bun --watch index.ts"
+    "dev": "bun index.ts",
+    "build": "bun-vercel index.ts"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
   "homepage": "https://github.com/crackheadakira/lastFMEmbed#readme",
   "dependencies": {
     "@elysiajs/static": "^0.8.1",
+    "bun-vercel": "^1.0.0-alpha.5",
     "elysia": "^0.8.15"
   },
   "devDependencies": {
