@@ -1,40 +1,62 @@
-const express = require('express');
-const https = require('https');
-const path = require('path');
+import { Elysia, t } from "elysia";
+import { staticPlugin } from '@elysiajs/static'
+import https from 'https';
+import path from 'path';
 
-const app = express();
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', async (req, res) => {
-    res.sendFile(path.join(__dirname + '/index.html'));
-})
-
-app.get('/user/:user', async (req, res) => {
-    try {
-        console.log(`User: ${req.params.user}`)
-        let user = req.params.user;
-        let queries = req.query;
-        let trackAmount = queries?.previousTracks ? parseInt(queries.previousTracks) - 1 : 1;
-
-        let response = await fetchRecentTracks(user, trackAmount);
-        let track = response.recenttracks.track;
-        res.setHeader('Content-Type', 'image/svg+xml');
-        res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(await getHTML(track, queries));
-
-    } catch (e) {
-        console.log(e);
-        res.end("Error in retrieving the user, either the user doesn't exist or there was an error on our side!")
+type lastfm_data = {
+    recenttracks: {
+        track: {
+            artist: {
+                "#text": string,
+            }
+            name: string
+            image: {
+                size: string
+                "#text": string,
+            }[],
+            "@attr": {
+                nowplaying: boolean
+            }
+        }[]
     }
-});
+}
 
-app.listen(port, () => console.log(`Listening on port ${port}`));
+type query_data = {
+    previousTracks: string,
+    trackColor: string,
+    artistColor: string,
+    backgroundColor: string,
+    statusBarColor: string,
+    showStatus: string,
+    statusBar: string,
+    transparent: string
+}
 
-module.exports = app;
+new Elysia()
+    .use(staticPlugin())
+    .get('/', ({ set }) => {
+        set.headers["Content-Type"] = "text/html";
 
-function fetchRecentTracks(user, amount) {
+        return Bun.file(path.join(import.meta.dir, "index.html"))
+    })
+    .get('/user/:user', async ({set, params: { user }, query }) => {
+        set.headers["Content-Type"] = "image/svg+xml";
+        set.headers["Cache-Control"] = "s-max-age=1, stale-while-revalidate";
+
+        console.log(`User: ${user}`);
+        
+        const trackAmount = query?.previousTracks ? parseInt(query.previousTracks) - 1 : 1;
+        const response = await fetchRecentTracks(user, trackAmount);
+        const track = response.recenttracks.track;
+        return await getHTML(track, query as query_data);
+    })
+    .listen(port);
+
+console.log(`Server running on port ${port}`);
+
+function fetchRecentTracks(user: string, amount: number): Promise<lastfm_data> {
     amount = Math.min(Math.max(amount, 1), 4);
     const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=${amount}`;
     return new Promise((resolve) => {
@@ -52,7 +74,7 @@ function fetchRecentTracks(user, amount) {
     });
 }
 
-function getCoverBase64(url) {
+function getCoverBase64(url: string): Promise<string> {
     return new Promise((resolve) => {
         https.get(url, (resp) => {
             resp.setEncoding('base64');
@@ -70,7 +92,7 @@ function getCoverBase64(url) {
 }
 
 // Needed for encoding special characters in XML
-function htmlSpecialChars(unsafe) {
+function htmlSpecialChars(unsafe: string) {
     return unsafe
     .replaceAll(`&`, "&amp;")
     .replaceAll(`<`, "&lt;")
@@ -80,7 +102,7 @@ function htmlSpecialChars(unsafe) {
 }
 
 
-function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false) {
+function htmlDiv(artist: string, track: string, cover: string, past = false, showStatus = false, statusBar = false) {
     return `
     <div class="main">
         <img src="${cover}" class="cover" />
@@ -93,7 +115,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
     </div>`;
 }
 
-function makeBars(amount) {
+function makeBars(amount: number) {
     let html = "";
     for (let i = 0; i < amount; i++) {
         html += `<div class="bar"></div>`;
@@ -101,7 +123,7 @@ function makeBars(amount) {
     return html;
 }
 
-function getBarCSS(amount) {
+function getBarCSS(amount: number) {
     let css = "";
     for (let i = 0; i < amount; i++) {
         css += `.bar:nth-child(${i + 1}) {
@@ -112,10 +134,10 @@ function getBarCSS(amount) {
     return css;
 }
 
-async function getHTML(data, queries) {
+async function getHTML(data: lastfm_data["recenttracks"]["track"], queries: query_data) {
     let html = "";
 
-    const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
+    const amountOfTrack = parseInt(queries?.previousTracks) > 1 ? data.length : 1;
     const showStatus = queries?.showStatus === "true";
     const statusBar = showStatus ? queries?.statusBar === "true" : false;
     const bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
@@ -133,19 +155,19 @@ async function getHTML(data, queries) {
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
     if (Object.keys(queries).length > 0) {
-        if (queries.transparent === "true")
+        if (queries.transparent && queries.transparent === "true")
             bgColor = "transparent";
 
-        if (queries.hasOwnProperty("trackColor") && queries.trackColor.length === 6)
+        if (queries.trackColor && queries.trackColor.length === 6)
             trackColor = queries.trackColor;
 
-        if (queries.hasOwnProperty("artistColor") && queries.artistColor.length === 6)
+        if (queries.artistColor && queries.artistColor.length === 6)
             artistColor = queries.artistColor;
 
-        if (queries.hasOwnProperty("bgColor") && queries.bgColor.length === 6 && queries.transparent !== "true")
-            bgColor = `#${queries.bgColor}`
+        if (queries.backgroundColor && queries.backgroundColor.length === 6 && queries.transparent !== "true")
+            bgColor = `#${queries.backgroundColor}`
         
-        if (queries.hasOwnProperty("statusBarColor") && queries.statusBarColor.length === 6 && statusBar)
+        if (queries.statusBarColor && queries.statusBarColor.length === 6 && statusBar)
             statusBarColor = `#${queries.statusBarColor}`
     }
 
