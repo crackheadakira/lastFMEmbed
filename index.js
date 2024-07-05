@@ -18,7 +18,7 @@ app.get('/user/:user', async (req, res) => {
         console.log(`User: ${req.params.user}`)
         const user = req.params.user;
         const queries = req.query;
-        const trackAmount = clampNumber(queries.previousTracks, 0, 4);
+        const trackAmount = clampNumber(queries.previousTracks, 1, 4);
 
         const response = await fetchRecentTracks(user, trackAmount);
         const track = response.recenttracks.track;
