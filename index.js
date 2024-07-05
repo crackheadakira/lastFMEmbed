@@ -1,3 +1,5 @@
+require('dotenv').config({ path: __dirname + '/.env.local'});
+
 const express = require('express');
 const https = require('https');
 const path = require('path');
@@ -14,15 +16,15 @@ app.get('/', async (req, res) => {
 app.get('/user/:user', async (req, res) => {
     try {
         console.log(`User: ${req.params.user}`)
-        let user = req.params.user;
-        let queries = req.query;
-        let trackAmount = queries?.previousTracks ? parseInt(queries.previousTracks) - 1 : 1;
+        const user = req.params.user;
+        const queries = req.query;
+        const trackAmount = clampNumber(queries.previousTracks, 0, 4);
 
-        let response = await fetchRecentTracks(user, trackAmount);
-        let track = response.recenttracks.track;
+        const response = await fetchRecentTracks(user, trackAmount);
+        const track = response.recenttracks.track;
         res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(await getHTML(track, queries));
+        res.end(await getSVG(track, queries));
 
     } catch (e) {
         console.log(e);
@@ -34,9 +36,13 @@ app.listen(port, () => console.log(`Listening on port ${port}`));
 
 module.exports = app;
 
+function clampNumber(num, min, max) {
+    if(isNaN(num)) return min;
+    return Math.min(Math.max(num, min), max);
+}
+
 function fetchRecentTracks(user, amount) {
-    amount = Math.min(Math.max(amount, 1), 4);
-    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=86c9aeec2744601fed67fbce2ae02a04&format=json&limit=${amount}`;
+    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json&limit=${amount}`;
     return new Promise((resolve) => {
         https.get(requestURL, (resp) => {
             let data = '';
@@ -45,23 +51,6 @@ function fetchRecentTracks(user, amount) {
             });
             resp.on('end', () => {
                 resolve(JSON.parse(data));
-            });
-        }).on("error", (err) => {
-            console.log(err.message);
-        });
-    });
-}
-
-function getCoverBase64(url) {
-    return new Promise((resolve) => {
-        https.get(url, (resp) => {
-            resp.setEncoding('base64');
-            let data = "data:" + resp.headers["content-type"] + ";base64,";
-            resp.on('data', (chunk) => {
-                data += chunk;
-            });
-            resp.on('end', () => {
-                resolve(data);
             });
         }).on("error", (err) => {
             console.log(err.message);
@@ -112,7 +101,7 @@ function getBarCSS(amount) {
     return css;
 }
 
-async function getHTML(data, queries) {
+async function getSVG(data, queries) {
     let html = "";
 
     const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
@@ -123,7 +112,7 @@ async function getHTML(data, queries) {
     for (let i = 0; i < amountOfTrack; i++) {
         const artist = data[i].artist["#text"];
         const trackName = data[i].name;
-        const cover = await getCoverBase64(data[i].image[2]["#text"]);
+        const cover = data[i].image[2]["#text"];
         const nowPlaying = data[i]["@attr"]?.nowplaying;
         html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar);
     }
