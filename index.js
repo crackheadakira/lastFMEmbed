@@ -58,6 +58,23 @@ function fetchRecentTracks(user, amount) {
     });
 }
 
+function getCoverBase64(url) {
+    return new Promise((resolve) => {
+        https.get(url, (resp) => {
+            resp.setEncoding('base64');
+            let data = "data:" + resp.headers["content-type"] + ";base64,";
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => {
+                resolve(data);
+            });
+        }).on("error", (err) => {
+            console.log(err.message);
+        });
+    });
+}
+
 // Needed for encoding special characters in XML
 function htmlSpecialChars(unsafe) {
     return unsafe
@@ -112,7 +129,7 @@ async function getSVG(data, queries) {
     for (let i = 0; i < amountOfTrack; i++) {
         const artist = data[i].artist["#text"];
         const trackName = data[i].name;
-        const cover = data[i].image[2]["#text"];
+        const cover = await getCoverBase64(data[i].image[2]["#text"]);
         const nowPlaying = data[i]["@attr"]?.nowplaying;
         html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar);
     }
