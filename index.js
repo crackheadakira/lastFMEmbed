@@ -178,8 +178,8 @@ async function getSVG(data, queries) {
             statusBarColor = `#${queries.statusBarColor}`
     }
 
-    const height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
-
+    let height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
+    if(showOnlyCover && queries?.showAsAlbum === "true") height = 243;
     return `
     <svg width="382" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <foreignObject width="382" height="${height}">
