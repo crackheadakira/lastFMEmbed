@@ -16,16 +16,34 @@ app.get('/', async (req, res) => {
 app.get('/user/:user', async (req, res) => {
     try {
         console.log(`User: ${req.params.user}`)
-        const user = req.params.user;
-        const queries = req.query;
-        const trackAmount = clampNumber(queries.previousTracks, 1, 4);
-
-        const response = await fetchRecentTracks(user, trackAmount);
-        const track = response.recenttracks.track;
+        
         res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(await getSVG(track, queries));
+        
+        const user = req.params.user;
+        const queries = req.query;
+        const showAsAlbum = queries?.showAsAlbum === "true";
+        const trackAmount = clampNumber(queries.previousTracks, 1, 5);
 
+        const response = await fetchRecentTracks(user);
+        let tracks = response.recenttracks.track;
+        if(showAsAlbum) {
+            tracks = tracks.filter((track, index, self) => 
+                index === self.findIndex((t) => {
+                    if(track.album.mbid !== "") {
+                        return t.album.mbid === track.album.mbid;
+                    } else {
+                        return t.album["#text"] === track.album["#text"];
+                    }
+                }
+                )
+            );
+        }
+
+        tracks = tracks.slice(0, trackAmount);
+        
+        const svg = await getSVG(tracks, queries);
+        res.end(svg);
     } catch (e) {
         console.log(e);
         res.end("Error in retrieving the user, either the user doesn't exist or there was an error on our side!")
@@ -41,8 +59,8 @@ function clampNumber(num, min, max) {
     return Math.min(Math.max(num, min), max);
 }
 
-function fetchRecentTracks(user, amount) {
-    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json&limit=${amount}`;
+function fetchRecentTracks(user) {
+    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json`;
     return new Promise((resolve) => {
         https.get(requestURL, (resp) => {
             let data = '';
