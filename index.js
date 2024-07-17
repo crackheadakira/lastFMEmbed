@@ -16,16 +16,34 @@ app.get('/', async (req, res) => {
 app.get('/user/:user', async (req, res) => {
     try {
         console.log(`User: ${req.params.user}`)
-        const user = req.params.user;
-        const queries = req.query;
-        const trackAmount = clampNumber(queries.previousTracks, 1, 4);
-
-        const response = await fetchRecentTracks(user, trackAmount);
-        const track = response.recenttracks.track;
+        
         res.setHeader('Content-Type', 'image/svg+xml');
         res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        res.end(await getSVG(track, queries));
+        
+        const user = req.params.user;
+        const queries = req.query;
+        const showAsAlbum = queries?.showAsAlbum === "true";
+        const trackAmount = clampNumber(queries.previousTracks, 1, 5);  
 
+        const response = await fetchRecentTracks(user);
+        let tracks = response.recenttracks.track;
+        if(showAsAlbum) {
+            tracks = tracks.filter((track, index, self) => 
+                index === self.findIndex((t) => {
+                    if(track.album.mbid !== "") {
+                        return t.album.mbid === track.album.mbid;
+                    } else {
+                        return t.album["#text"] === track.album["#text"];
+                    }
+                }
+                )
+            );
+        }
+
+        tracks = tracks.slice(0, trackAmount);
+        
+        const svg = await getSVG(tracks, queries);
+        res.end(svg);
     } catch (e) {
         console.log(e);
         res.end("Error in retrieving the user, either the user doesn't exist or there was an error on our side!")
@@ -41,8 +59,8 @@ function clampNumber(num, min, max) {
     return Math.min(Math.max(num, min), max);
 }
 
-function fetchRecentTracks(user, amount) {
-    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json&limit=${amount}`;
+function fetchRecentTracks(user) {
+    const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json`;
     return new Promise((resolve) => {
         https.get(requestURL, (resp) => {
             let data = '';
@@ -86,8 +104,8 @@ function htmlSpecialChars(unsafe) {
 }
 
 
-function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false) {
-    return `
+function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false, showOnlyCover = false) {
+    if(!showOnlyCover) return `
     <div class="main">
         <img src="${cover}" class="cover" />
         <div class="content">
@@ -97,6 +115,10 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
             ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
     </div>`;
+
+    return `<div class="main">
+        <img src="${cover}" class="cover" />
+    </div>`
 }
 
 function makeBars(amount) {
@@ -124,6 +146,7 @@ async function getSVG(data, queries) {
     const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
     const showStatus = queries?.showStatus === "true";
     const statusBar = showStatus ? queries?.statusBar === "true" : false;
+    const showOnlyCover = queries?.showOnlyCover === "true";
     const bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
 
     for (let i = 0; i < amountOfTrack; i++) {
@@ -131,7 +154,7 @@ async function getSVG(data, queries) {
         const trackName = data[i].name;
         const cover = await getCoverBase64(data[i].image[2]["#text"]);
         const nowPlaying = data[i]["@attr"]?.nowplaying;
-        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar);
+        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar, showOnlyCover);
     }
 
     let bgColor = "#181414";
