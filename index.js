@@ -23,7 +23,7 @@ app.get('/user/:user', async (req, res) => {
         const user = req.params.user;
         const queries = req.query;
         const showAsAlbum = queries?.showAsAlbum === "true";
-        const trackAmount = clampNumber(queries.previousTracks, 1, 5);
+        const trackAmount = clampNumber(queries.previousTracks, 1, 5);  
 
         const response = await fetchRecentTracks(user);
         let tracks = response.recenttracks.track;
