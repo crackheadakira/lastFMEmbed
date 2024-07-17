@@ -33,6 +33,12 @@
                     <div id="bars" class="relative hidden h-5 w-28"></div>
                 </div>
             </div>
+            <div class="w-embed">
+                <div id="cover_embed"
+                    class="hidden h-embed w-fit items-center gap-5 rounded-md bg-embedBackground px-2">
+                    <img id="cover" src="/22.png" class="aspect-square h-24 rounded-md"></img>
+                </div>
+            </div>
         </div>
         <div id="settings" class="w-full px-4">
             <h2 class="pb-1 text-left text-lg font-semibold">Settings</h2>
@@ -59,6 +65,13 @@
                 <label for="transparent" class="relative flex items-center justify-between text-settingName">
                     Transparent background
                     <input type="checkbox" name="transparent"
+                        class="peer absolute left-1/2 h-full w-full -translate-x-1/2 appearance-none rounded-md" />
+                    <span
+                        class="ml-4 flex h-8 w-input flex-shrink-0 items-center rounded-full bg-toggleOff p-1 duration-150 ease-in-out after:pointer-events-none after:h-6 after:w-6 after:rounded-full after:bg-text after:shadow-md after:duration-150 group-hover:after:translate-x-1 peer-checked:bg-primaryButton peer-checked:after:translate-x-input"></span>
+                </label>
+                <label for="showOnlyCover" class="relative flex items-center justify-between text-settingName">
+                    Show only cover
+                    <input type="checkbox" name="showOnlyCover"
                         class="peer absolute left-1/2 h-full w-full -translate-x-1/2 appearance-none rounded-md" />
                     <span
                         class="ml-4 flex h-8 w-input flex-shrink-0 items-center rounded-full bg-toggleOff p-1 duration-150 ease-in-out after:pointer-events-none after:h-6 after:w-6 after:rounded-full after:bg-text after:shadow-md after:duration-150 group-hover:after:translate-x-1 peer-checked:bg-primaryButton peer-checked:after:translate-x-input"></span>
@@ -110,11 +123,23 @@
             const query = input.name;
             const value = (input.type === "checkbox" ? input.checked.toString() : input.value).replace("#", "");
 
-            if (query === "showStatus" && input.checked)
+            if (query === "showStatus" && input.checked) {
                 document.querySelector('#status').classList.remove('hidden');
+            }
             else if (query === "showStatus" && !input.checked) {
                 document.querySelector('#status').classList.add('hidden');
                 document.querySelector('#bars').classList.add('hidden');
+            }
+
+            if (query === "showOnlyCover" && input.checked) {
+                document.querySelector('#cover_embed').classList.remove('hidden');
+                document.querySelector('#embed').classList.add('hidden');
+                document.querySelector('#cover_embed').classList.add('flex');
+            }
+            else if (query === "showOnlyCover" && !input.checked) {
+                document.querySelector('#cover_embed').classList.add('hidden');
+                document.querySelector('#cover_embed').classList.remove('flex');
+                document.querySelector('#embed').classList.remove('hidden');
             }
 
             if (query === "showAsAlbum" && input.checked) {
@@ -122,6 +147,7 @@
             } else if (query === "showAsAlbum" && !input.checked) {
                 document.querySelector('#song').textContent = "Hooka";
             }
+
 
             if (query === "statusBar" && input.checked && parameters["showStatus"] === "true") {
                 document.querySelector('#bars').classList.remove('hidden');
@@ -133,10 +159,12 @@
                 document.querySelector('#status').classList.remove('hidden');
             }
 
-            if (query === "transparent" && input.checked)
+            if (query === "transparent" && input.checked) {
                 document.querySelector('#embed').style.backgroundColor = "transparent";
-            else if (query === "transparent" && !input.checked)
+            }
+            else if (query === "transparent" && !input.checked) {
                 document.querySelector('#embed').style.backgroundColor = `#${parameters["backgroundColor"]}`;
+            }
 
             if (query === "backgroundColor")
                 document.querySelector('#embed').style.backgroundColor = `#${value}`;

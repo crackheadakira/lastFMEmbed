@@ -104,8 +104,8 @@ function htmlSpecialChars(unsafe) {
 }
 
 
-function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false) {
-    return `
+function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false, showOnlyCover = false) {
+    if(!showOnlyCover) return `
     <div class="main">
         <img src="${cover}" class="cover" />
         <div class="content">
@@ -115,6 +115,10 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
             ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
     </div>`;
+
+    return `<div class="main">
+        <img src="${cover}" class="cover" />
+    </div>`
 }
 
 function makeBars(amount) {
@@ -142,6 +146,7 @@ async function getSVG(data, queries) {
     const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
     const showStatus = queries?.showStatus === "true";
     const statusBar = showStatus ? queries?.statusBar === "true" : false;
+    const showOnlyCover = queries?.showOnlyCover === "true";
     const bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
 
     for (let i = 0; i < amountOfTrack; i++) {
@@ -149,7 +154,7 @@ async function getSVG(data, queries) {
         const trackName = data[i].name;
         const cover = await getCoverBase64(data[i].image[2]["#text"]);
         const nowPlaying = data[i]["@attr"]?.nowplaying;
-        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar);
+        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar, showOnlyCover);
     }
 
     let bgColor = "#181414";
