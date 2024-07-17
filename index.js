@@ -201,6 +201,10 @@ async function getSVG(data, queries) {
             font-family: "Inter", -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
             -webkit-font-smoothing: auto;
             -moz-osx-font-smoothing: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0px 6px;
+            justify-content: center;
         }
     
         .main {
