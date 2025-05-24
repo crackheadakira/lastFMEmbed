@@ -79,7 +79,7 @@ new Elysia({ nativeStaticResponse: true })
 
         const user = params.user;
 
-        const response = await fetchRecentTracks(user) as LastFMData;
+        const response = await fetchRecentTracksCached(user);
 
         let tracks = response.recenttracks.track;
 
@@ -105,6 +105,26 @@ new Elysia({ nativeStaticResponse: true })
 
 console.log(`Listening on port: ${port}`);
 
+const cache = new Map<string, { data: LastFMData; expires: number }>();
+const coverCache = new Map<string, { base64: string; expires: number }>();
+
+async function fetchRecentTracksCached(user: string) {
+    const cacheKey = `recentTracks:${user}`;
+    const now = Date.now();
+
+    const cached = cache.get(cacheKey);
+    if (cached && cached.expires > now) {
+        return cached.data;
+    }
+
+    const data = await fetchRecentTracks(user) as LastFMData; // Your actual fetch function
+
+    cache.set(cacheKey, { data, expires: now + 1000 * 60 }); // Cache for one minute
+
+    return data;
+}
+
+
 async function fetchRecentTracks(user: string) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
@@ -119,9 +139,24 @@ async function fetchRecentTracks(user: string) {
     return await res.json();
 }
 
-async function getCoverBase64(url: string | undefined) {
+async function getCoverBase64Cached(url: string | undefined) {
     if (!url) throw new Error("Missing album cover URL in track");
 
+    const now = Date.now();
+    const cached = coverCache.get(url);
+
+    if (cached && cached.expires > now) {
+        return cached.base64;
+    }
+
+    const base64 = await getCoverBase64(url);
+
+    coverCache.set(url, { base64, expires: now + 24 * 60 * 60 * 1000 }); // 24 hour cache
+
+    return base64;
+}
+
+async function getCoverBase64(url: string) {
     const res = await fetch(url);
 
     if (!res.ok || !res.body) {
@@ -204,7 +239,7 @@ async function getSVG(data: LastFMTrack[], queries: typeof userQuery.static) {
     const coverPromises = data.slice(0, amountOfTrack).map(async (track) => {
         const artist = track.artist["#text"];
         const trackName = track.name as string;
-        const cover = await getCoverBase64(track.image[2]?.['#text']);
+        const cover = await getCoverBase64Cached(track.image[2]?.['#text']);
         const nowPlaying = track["@attr"]?.nowplaying ?? false;
 
         return htmlDiv({
