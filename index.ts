@@ -212,26 +212,25 @@ async function getSVG(data: any[], queries: typeof userQuery.static) {
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
 
-    if (Object.keys(queries).length > 0) {
-        if (queries.transparent) bgColor = "transparent";
+    if (queries.transparent) bgColor = "transparent";
 
-        if (queries.trackColor.length === 6)
-            trackColor = queries.trackColor;
+    if (queries.trackColor.length === 6)
+        trackColor = queries.trackColor;
 
-        if (queries.artistColor.length === 6)
-            artistColor = queries.artistColor;
+    if (queries.artistColor.length === 6)
+        artistColor = queries.artistColor;
 
-        if (queries.bgColor.length === 6 && queries.transparent)
-            bgColor = `#${queries.bgColor}`;
+    if (queries.bgColor.length === 6 && queries.transparent)
+        bgColor = `#${queries.bgColor}`;
 
-        if (queries.statusBarColor.length === 6 && statusBar)
-            statusBarColor = `#${queries.statusBarColor}`;
-    }
+    if (queries.statusBarColor.length === 6 && statusBar)
+        statusBarColor = `#${queries.statusBarColor}`;
 
-    let height =
-        120 * amountOfTrack + (amountOfTrack > 1 ? 3 * amountOfTrack : 0);
+    let height = 120 * amountOfTrack + (amountOfTrack > 1 ? 3 * amountOfTrack : 0);
+
     if (showOnlyCover && amountOfTrack > 3) height = 243;
     else if (showOnlyCover && amountOfTrack <= 3) height = 120;
+
     return `
     <svg width="382" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <foreignObject width="382" height="${height}">
