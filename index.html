@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="./tailwind.css" rel="stylesheet" type="text/css">
+    <link href="./dist/tailwind.css" rel="stylesheet" type="text/css">
     <link rel="preconnect" href="https://rsms.me/">
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <title>last.FM embed editor</title>
@@ -24,8 +24,8 @@
         </div>
         <div id="embed_preview" class="w-full px-4">
             <h2 class="pb-1 text-left text-lg font-semibold">Preview</h2>
-            <div id="embed" class="flex h-embed w-embed items-center gap-5 rounded-md bg-embedBackground px-2">
-                <img id="cover" src="/22.png" class="aspect-square h-24 rounded-md"></img>
+            <div id="embed" class="flex h-embed-h w-embed-w items-center gap-5 rounded-md bg-embedBackground px-2">
+                <img id="cover" src="/public/22.png" class="aspect-square h-24 rounded-md"></img>
                 <div id="content" class="flex w-full flex-col items-center justify-center truncate">
                     <div id="status" class="hidden text-text">Listened to</div>
                     <div id="song" class="font-medium text-text">Hooka</div>
@@ -33,10 +33,10 @@
                     <div id="bars" class="relative hidden h-5 w-28"></div>
                 </div>
             </div>
-            <div class="w-embed">
+            <div class="w-embed-w">
                 <div id="cover_embed"
-                    class="hidden h-embed w-fit items-center gap-5 rounded-md bg-embedBackground px-2">
-                    <img id="cover" src="/22.png" class="aspect-square h-24 rounded-md"></img>
+                    class="hidden h-embed-h w-fit items-center gap-5 rounded-md bg-embedBackground px-2">
+                    <img id="cover" src="/public/22.png" class="aspect-square h-24 rounded-md"></img>
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@
                 </label>
             </div>
         </div>
-        <button class="h-11 w-28 rounded-md bg-primaryButton text-sm font-medium text-text">Copy URL</button>
+        <button class="h-11 w-28 rounded-md bg-primaryButton text-sm font-medium text-text cursor-pointer">Copy URL</button>
     </div>
 </body>
 
