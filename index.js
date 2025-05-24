@@ -1,52 +1,55 @@
-require('dotenv').config({ path: __dirname + '/.env.local'});
+require("dotenv").config({ path: __dirname + "/.env.local" });
 
-const express = require('express');
-const https = require('https');
-const path = require('path');
+const express = require("express");
+const https = require("https");
+const path = require("path");
 
 const app = express();
 const port = 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-app.get('/', async (req, res) => {
-    res.sendFile(path.join(__dirname + '/index.html'));
-})
+app.get("/", async (req, res) => {
+    res.sendFile(path.join(__dirname + "/index.html"));
+});
 
-app.get('/user/:user', async (req, res) => {
+app.get("/user/:user", async (req, res) => {
     try {
-        console.log(`User: ${req.params.user}`)
-        
-        res.setHeader('Content-Type', 'image/svg+xml');
-        res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
-        
+        console.log(`User: ${req.params.user}`);
+
+        res.setHeader("Content-Type", "image/svg+xml");
+        res.setHeader("Cache-Control", "s-max-age=1, stale-while-revalidate");
+
         const user = req.params.user;
         const queries = req.query;
         const showAsAlbum = queries?.showAsAlbum === "true";
-        const trackAmount = clampNumber(queries.previousTracks, 1, 5);  
+        const trackAmount = clampNumber(queries.previousTracks, 1, 5);
 
         const response = await fetchRecentTracks(user);
         let tracks = response.recenttracks.track;
-        if(showAsAlbum) {
-            tracks = tracks.filter((track, index, self) => 
-                index === self.findIndex((t) => {
-                    if(track.album.mbid !== "") {
-                        return t.album.mbid === track.album.mbid;
-                    } else {
-                        return t.album["#text"] === track.album["#text"];
-                    }
-                }
-                )
+        if (showAsAlbum) {
+            tracks = tracks.filter(
+                (track, index, self) =>
+                    index ===
+                    self.findIndex((t) => {
+                        if (track.album.mbid !== "") {
+                            return t.album.mbid === track.album.mbid;
+                        } else {
+                            return t.album["#text"] === track.album["#text"];
+                        }
+                    })
             );
         }
 
         tracks = tracks.slice(0, trackAmount);
-        
+
         const svg = await getSVG(tracks, queries);
         res.end(svg);
     } catch (e) {
         console.log(e);
-        res.end("Error in retrieving the user, either the user doesn't exist or there was an error on our side!")
+        res.end(
+            "Error in retrieving the user, either the user doesn't exist or there was an error on our side!"
+        );
     }
 });
 
@@ -55,61 +58,79 @@ app.listen(port, () => console.log(`Listening on port ${port}`));
 module.exports = app;
 
 function clampNumber(num, min, max) {
-    if(isNaN(num)) return min;
+    if (isNaN(num)) return min;
     return Math.min(Math.max(num, min), max);
 }
 
-function fetchRecentTracks(user) {
+async function fetchRecentTracks(user) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
     const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json`;
-    return new Promise((resolve) => {
-        https.get(requestURL, (resp) => {
-            let data = '';
-            resp.on('data', (chunk) => {
-                data += chunk;
-            });
-            resp.on('end', () => {
-                resolve(JSON.parse(data));
-            });
-        }).on("error", (err) => {
-            console.log(err.message);
+
+    try {
+        const res = await fetch(requestURL, {
+            signal: controller.signal,
         });
-    });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error("Fetch error:", err);
+        throw err;
+    }
 }
 
 function getCoverBase64(url) {
     return new Promise((resolve) => {
-        https.get(url, (resp) => {
-            resp.setEncoding('base64');
-            let data = "data:" + resp.headers["content-type"] + ";base64,";
-            resp.on('data', (chunk) => {
-                data += chunk;
+        https
+            .get(url, (resp) => {
+                resp.setEncoding("base64");
+                let data = "data:" + resp.headers["content-type"] + ";base64,";
+                resp.on("data", (chunk) => {
+                    data += chunk;
+                });
+                resp.on("end", () => {
+                    resolve(data);
+                });
+            })
+            .on("error", (err) => {
+                console.log(err.message);
             });
-            resp.on('end', () => {
-                resolve(data);
-            });
-        }).on("error", (err) => {
-            console.log(err.message);
-        });
     });
 }
 
 // Needed for encoding special characters in XML
 function htmlSpecialChars(unsafe) {
     return unsafe
-    .replaceAll(`&`, "&amp;")
-    .replaceAll(`<`, "&lt;")
-    .replaceAll(`>`, "&gt;")
-    .replaceAll(`"`, "&quot;")
-    .replaceAll(`'`, "&apos;");
+        .replaceAll(`&`, "&amp;")
+        .replaceAll(`<`, "&lt;")
+        .replaceAll(`>`, "&gt;")
+        .replaceAll(`"`, "&quot;")
+        .replaceAll(`'`, "&apos;");
 }
 
-
-function htmlDiv(artist, track, cover, past = false, showStatus = false, statusBar = false, showOnlyCover = false) {
-    if(!showOnlyCover) return `
+function htmlDiv(
+    artist,
+    track,
+    cover,
+    past = false,
+    showStatus = false,
+    statusBar = false,
+    showOnlyCover = false
+) {
+    if (!showOnlyCover)
+        return `
     <div class="main">
         <img src="${cover}" class="cover" />
         <div class="content">
-            ${showStatus && !statusBar ? `<div class="status">${!past ? "Listened to" : "Listening to"}</div>` : ""}
+            ${
+                showStatus && !statusBar
+                    ? `<div class="status">${
+                          !past ? "Listened to" : "Listening to"
+                      }</div>`
+                    : ""
+            }
             <div class="song">${htmlSpecialChars(track)}</div>
             <div class="artist">${htmlSpecialChars(artist)}</div>
             ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
@@ -118,7 +139,7 @@ function htmlDiv(artist, track, cover, past = false, showStatus = false, statusB
 
     return `<div class="main">
         <img src="${cover}" class="cover" />
-    </div>`
+    </div>`;
 }
 
 function makeBars(amount) {
@@ -154,7 +175,15 @@ async function getSVG(data, queries) {
         const trackName = data[i].name;
         const cover = await getCoverBase64(data[i].image[2]["#text"]);
         const nowPlaying = data[i]["@attr"]?.nowplaying;
-        html += htmlDiv(artist, trackName, cover, nowPlaying, showStatus, statusBar, showOnlyCover);
+        html += htmlDiv(
+            artist,
+            trackName,
+            cover,
+            nowPlaying,
+            showStatus,
+            statusBar,
+            showOnlyCover
+        );
     }
 
     let bgColor = "#181414";
@@ -162,25 +191,39 @@ async function getSVG(data, queries) {
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
     if (Object.keys(queries).length > 0) {
-        if (queries.transparent === "true")
-            bgColor = "transparent";
+        if (queries.transparent === "true") bgColor = "transparent";
 
-        if (queries.hasOwnProperty("trackColor") && queries.trackColor.length === 6)
+        if (
+            queries.hasOwnProperty("trackColor") &&
+            queries.trackColor.length === 6
+        )
             trackColor = queries.trackColor;
 
-        if (queries.hasOwnProperty("artistColor") && queries.artistColor.length === 6)
+        if (
+            queries.hasOwnProperty("artistColor") &&
+            queries.artistColor.length === 6
+        )
             artistColor = queries.artistColor;
 
-        if (queries.hasOwnProperty("bgColor") && queries.bgColor.length === 6 && queries.transparent !== "true")
-            bgColor = `#${queries.bgColor}`
-        
-        if (queries.hasOwnProperty("statusBarColor") && queries.statusBarColor.length === 6 && statusBar)
-            statusBarColor = `#${queries.statusBarColor}`
+        if (
+            queries.hasOwnProperty("bgColor") &&
+            queries.bgColor.length === 6 &&
+            queries.transparent !== "true"
+        )
+            bgColor = `#${queries.bgColor}`;
+
+        if (
+            queries.hasOwnProperty("statusBarColor") &&
+            queries.statusBarColor.length === 6 &&
+            statusBar
+        )
+            statusBarColor = `#${queries.statusBarColor}`;
     }
 
-    let height = 120 * amountOfTrack + (amountOfTrack > 1 ? (3 * amountOfTrack) : 0);
-    if(showOnlyCover && amountOfTrack > 3) height = 243;
-    else if(showOnlyCover && amountOfTrack <= 3) height = 120;
+    let height =
+        120 * amountOfTrack + (amountOfTrack > 1 ? 3 * amountOfTrack : 0);
+    if (showOnlyCover && amountOfTrack > 3) height = 243;
+    else if (showOnlyCover && amountOfTrack <= 3) height = 120;
     return `
     <svg width="382" height="${height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <foreignObject width="382" height="${height}">
@@ -305,5 +348,5 @@ async function getSVG(data, queries) {
     </style>
         </body>
     </foreignObject>
-</svg>`
+</svg>`;
 }

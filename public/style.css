@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+    --spacing-816px: 816px;
+    --spacing-embed-h: 120px;
+
+    --spacing-embed-w: 382px;
+    --spacing-input: 4.25rem;
+
+    --font-inter: "Inter", -apple-system, " BlinkMacSystemFont", " Segoe UI", " Helvetica", " Arial", " sans-serif", " Apple Color Emoji", " Segoe UI Emoji";
+    --translate-input: 2.25rem;
+
+    --animate-sound: soundWave 0ms -3200ms ease-in-out infinite alternate;
+
+    --color-text: #FFFFFF;
+    --color-background: #040316;
+    --color-accent: #9693BD;
+    --color-settingName: #A19EC4;
+    --color-primaryButton: #4944A7;
+    --color-input: #1D1C2D;
+    --color-toggleOff: #807CC1;
+    --color-embedBackground: #181414;
+
+    @keyframes soundWave {
+        0% {
+            height: 3px;
+            opacity: 0.35;
+        }
+
+        100% {
+            height: 15px;
+            opacity: 0.95;
+        }
+    }
+}
