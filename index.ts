@@ -1,93 +1,87 @@
-require("dotenv").config({ path: __dirname + "/.env.local" });
-
-import { Elysia, file, t } from 'elysia'
-import { staticPlugin } from '@elysiajs/static'
+import dotenv from 'dotenv';
+import { Elysia, t } from 'elysia'
 import embedBuilder from "./index.html";
+dotenv.config();
 
 const port = process.env.PORT ?? 3000;
-console.log(`Listening on port: ${port}`);
 
-// const app = Express();
-// app.use(express.static(path.join(__dirname, "public")));
-// app.listen(port, () => console.log(`Listening on port ${port}`));
+const userQuery = t.Object({
+    showAsAlbum: t.Boolean({
+        default: false,
+    }),
+    showStatus: t.Boolean({
+        default: false,
+    }),
+    statusBar: t.Boolean({
+        default: false,
+    }),
+    showOnlyCover: t.Boolean({
+        default: false,
+    }),
+    transparent: t.Boolean({
+        default: false,
+    }),
 
-const userBodyType = t.Object({
-    showAsAlbum: t.MaybeEmpty(t.Boolean()),
-    showStatus: t.MaybeEmpty(t.Boolean()),
-    statusBar: t.MaybeEmpty(t.Boolean()),
-    showOnlyCover: t.MaybeEmpty(t.Boolean()),
-    transparent: t.MaybeEmpty(t.Boolean()),
-
-    bgColor: t.MaybeEmpty(t.String(), {
+    bgColor: t.String({
         default: "#181414"
     }),
-    trackColor: t.MaybeEmpty(t.String(), {
+    trackColor: t.String({
         default: "f7f7f7"
     }),
-    artistColor: t.MaybeEmpty(t.String(), {
+    artistColor: t.String({
         default: "9f9f9f",
     }),
-    statusBarColor: t.MaybeEmpty(t.String(), {
+    statusBarColor: t.String({
         default: "#1c8b43"
     }),
 
     previousTracks: t.Number({
         minimum: 1,
         maximum: 5,
+        default: 1,
     }),
 });
 
 new Elysia({ nativeStaticResponse: true })
-    .use(staticPlugin({
-        indexHTML: true,
-    }))
     .listen(port)
     .all("/", embedBuilder)
+    .onError(({ error }) => {
+        return new Response(error.toString())
+    })
     .get("/user/:user", async ({ params, query, set }) => {
-        try {
-            console.log(`User: ${params.user}`);
+        set.headers["content-type"] = "image/svg+xml";
+        set.headers["cache-control"] = "s-max-age=1, stale-while-revalidate";
 
-            set.headers["content-type"] = "image/svg+xml";
-            set.headers["cache-control"] = "s-max-age=1, stale-while-revalidate";
+        const user = params.user;
 
-            const user = params.user;
-            const queries = query;
-            const trackAmount = clampNumber(queries.previousTracks, 1, 5);
+        const response = await fetchRecentTracks(user);
 
-            const response = await fetchRecentTracks(user);
+        let tracks: any[] = response.recenttracks.track;
 
-            let tracks: any[] = response.recenttracks.track;
-
-            if (queries.showAsAlbum) {
-                tracks = tracks.filter(
-                    (track, index, self) =>
-                        index ===
-                        self.findIndex((t) => {
-                            if (track.album.mbid !== "") {
-                                return t.album.mbid === track.album.mbid;
-                            } else {
-                                return t.album["#text"] === track.album["#text"];
-                            }
-                        })
-                );
-            }
-
-            tracks = tracks.slice(0, trackAmount);
-
-            const svg = await getSVG(tracks, queries);
-            return svg;
-        } catch (e) {
-            console.log(e);
-            return "Error in retrieving the user, either the user doesn't exist or there was an error on our side!";
+        if (query.showAsAlbum) {
+            tracks = tracks.filter(
+                (track, index, self) =>
+                    index ===
+                    self.findIndex((t) => {
+                        if (track.album.mbid !== "") {
+                            return t.album.mbid === track.album.mbid;
+                        } else {
+                            return t.album["#text"] === track.album["#text"];
+                        }
+                    })
+            );
         }
+
+        tracks = tracks.slice(0, query.previousTracks);
+
+        const svg = await getSVG(tracks, query);
+        return svg;
     }, {
-        query: userBodyType,
+        query: userQuery,
         response: t.String(),
     });
 
-function clampNumber(num: number, min: number, max: number) {
-    return Math.min(Math.max(num, min), max);
-}
+console.log(`Listening on port: ${port}`);
 
 async function fetchRecentTracks(user: string): Promise<any> {
     const controller = new AbortController();
@@ -141,10 +135,10 @@ function htmlDiv(data: {
     artist: string,
     track: string,
     cover: string,
-    past: boolean | undefined,
-    showStatus: boolean | undefined,
-    statusBar: boolean | undefined,
-    showOnlyCover: boolean | undefined,
+    past: boolean,
+    showStatus: boolean,
+    statusBar: boolean,
+    showOnlyCover: boolean,
 }) {
     if (!data.showOnlyCover)
         return `
@@ -186,30 +180,32 @@ function getBarCSS(amount: number) {
     return css;
 }
 
-async function getSVG(data: any, queries: typeof userBodyType.static) {
-    let html = "";
-
-    const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
-    const showStatus = queries?.showStatus;
-    const statusBar = showStatus ? queries?.statusBar : false;
-    const showOnlyCover = queries?.showOnlyCover;
+async function getSVG(data: any[], queries: typeof userQuery.static) {
+    const amountOfTrack = queries.previousTracks;
+    const showStatus = queries.showStatus;
+    const statusBar = showStatus ? queries.statusBar : false;
+    const showOnlyCover = queries.showOnlyCover;
     const bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
 
-    for (let i = 0; i < amountOfTrack; i++) {
-        const artist = data[i].artist["#text"];
-        const trackName = data[i].name as string;
-        const cover = await getCoverBase64(data[i].image[2]["#text"]);
-        const nowPlaying = data[i]["@attr"]?.nowplaying;
-        html += htmlDiv({
+    const coverPromises = data.slice(0, amountOfTrack).map(async (track) => {
+        const artist = track.artist["#text"];
+        const trackName = track.name as string;
+        const cover = await getCoverBase64(track.image[2]["#text"]);
+        const nowPlaying = track["@attr"]?.nowplaying;
+
+        return htmlDiv({
             artist,
             cover,
             track: trackName,
             past: nowPlaying,
-            showStatus: showStatus ?? false,
-            statusBar: statusBar ?? false,
-            showOnlyCover: showOnlyCover ?? false
+            showStatus,
+            statusBar,
+            showOnlyCover
         });
-    }
+    });
+
+    const htmlParts = await Promise.all(coverPromises);
+    const html = htmlParts.join("");
 
     let bgColor = "#181414";
     let trackColor = "f7f7f7";
@@ -219,16 +215,16 @@ async function getSVG(data: any, queries: typeof userBodyType.static) {
     if (Object.keys(queries).length > 0) {
         if (queries.transparent) bgColor = "transparent";
 
-        if (queries.trackColor?.length === 6)
+        if (queries.trackColor.length === 6)
             trackColor = queries.trackColor;
 
-        if (queries.artistColor?.length === 6)
+        if (queries.artistColor.length === 6)
             artistColor = queries.artistColor;
 
-        if (queries.bgColor?.length === 6 && queries.transparent)
+        if (queries.bgColor.length === 6 && queries.transparent)
             bgColor = `#${queries.bgColor}`;
 
-        if (queries.statusBarColor?.length === 6 && statusBar)
+        if (queries.statusBarColor.length === 6 && statusBar)
             statusBarColor = `#${queries.statusBarColor}`;
     }
 
