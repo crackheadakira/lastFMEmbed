@@ -1,7 +1,31 @@
 import dotenv from 'dotenv';
 import { Elysia, t } from 'elysia'
-import embedBuilder from "./index.html";
+
 dotenv.config();
+
+import embedBuilder from "./index.html";
+type LastFMTrack = {
+    artist: {
+        "#text": string,
+    }
+    album: {
+        mbid?: string,
+        "#text": string,
+    }
+    name: string
+    image: {
+        size: string
+        "#text": string,
+    }[],
+    "@attr"?: {
+        nowplaying: boolean
+    }
+}
+type LastFMData = {
+    recenttracks: {
+        track: LastFMTrack[]
+    }
+}
 
 const port = process.env.PORT ?? 3000;
 
@@ -46,6 +70,7 @@ new Elysia({ nativeStaticResponse: true })
     .listen(port)
     .all("/", embedBuilder)
     .onError(({ error }) => {
+        console.error(error);
         return new Response(error.toString())
     })
     .get("/user/:user", async ({ params, query, set }) => {
@@ -54,22 +79,19 @@ new Elysia({ nativeStaticResponse: true })
 
         const user = params.user;
 
-        const response = await fetchRecentTracks(user);
+        const response = await fetchRecentTracks(user) as LastFMData;
 
-        let tracks: any[] = response.recenttracks.track;
+        let tracks = response.recenttracks.track;
 
         if (query.showAsAlbum) {
-            tracks = tracks.filter(
-                (track, index, self) =>
-                    index ===
-                    self.findIndex((t) => {
-                        if (track.album.mbid !== "") {
-                            return t.album.mbid === track.album.mbid;
-                        } else {
-                            return t.album["#text"] === track.album["#text"];
-                        }
-                    })
-            );
+            const seen = new Set<string>();
+
+            tracks = tracks.filter((track) => {
+                const id = track.album.mbid || track.album["#text"];
+                if (seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            });
         }
 
         tracks = tracks.slice(0, query.previousTracks);
@@ -83,42 +105,34 @@ new Elysia({ nativeStaticResponse: true })
 
 console.log(`Listening on port: ${port}`);
 
-async function fetchRecentTracks(user: string): Promise<any> {
+async function fetchRecentTracks(user: string) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
     const requestURL = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${process.env.API_KEY}&format=json`;
 
-    try {
-        const res = await fetch(requestURL, {
-            signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error("Fetch error:", err);
-        throw err;
-    }
+    const res = await fetch(requestURL, {
+        signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+    return await res.json();
 }
 
-async function getCoverBase64(url: string) {
-    try {
-        const res = await fetch(url);
+async function getCoverBase64(url: string | undefined) {
+    if (!url) throw new Error("Missing album cover URL in track");
 
-        if (!res.ok || !res.body) {
-            throw new Error(`Failed to fetch image: ${res.statusText}`);
-        }
+    const res = await fetch(url);
 
-        const contentType = res.headers.get("content-type") || "image/jpeg"; // fallback type
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-
-        return `data:${contentType};base64,${base64}`;
-    } catch (err) {
-        console.error("getCoverBase64 error:", err);
-        throw err;
+    if (!res.ok || !res.body) {
+        throw new Error(`Failed to fetch image: ${res.statusText}`);
     }
+
+    const contentType = res.headers.get("content-type") || "image/jpeg"; // fallback type
+    const buffer = await res.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+
+    return `data:${contentType};base64,${base64}`;
 }
 
 // Needed for encoding special characters in XML
@@ -180,7 +194,7 @@ function getBarCSS(amount: number) {
     return css;
 }
 
-async function getSVG(data: any[], queries: typeof userQuery.static) {
+async function getSVG(data: LastFMTrack[], queries: typeof userQuery.static) {
     const amountOfTrack = queries.previousTracks;
     const showStatus = queries.showStatus;
     const statusBar = showStatus ? queries.statusBar : false;
@@ -190,8 +204,8 @@ async function getSVG(data: any[], queries: typeof userQuery.static) {
     const coverPromises = data.slice(0, amountOfTrack).map(async (track) => {
         const artist = track.artist["#text"];
         const trackName = track.name as string;
-        const cover = await getCoverBase64(track.image[2]["#text"]);
-        const nowPlaying = track["@attr"]?.nowplaying;
+        const cover = await getCoverBase64(track.image[2]?.['#text']);
+        const nowPlaying = track["@attr"]?.nowplaying ?? false;
 
         return htmlDiv({
             artist,

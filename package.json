@@ -5,8 +5,8 @@
   "main": "./index.js",
   "scripts": {
     "build": "tsc && bun run css:prod",
-    "css": "bunx @tailwindcss/cli -i ./public/style.css -o ./dist/tailwind.css",
-    "css:prod": "bunx @tailwindcss/cli -i ./public/style.css -o ./dist/tailwind.css --minify",
+    "css": "bunx @tailwindcss/cli -i ./style.css -o ./dist/tailwind.css",
+    "css:prod": "bunx @tailwindcss/cli -i ./style.css -o ./dist/tailwind.css --minify",
     "dev": "bun run index.ts"
   },
   "repository": {
