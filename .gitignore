@@ -1,3 +1,4 @@
 node_modules
 boiler.css
 .env.*
+dist/

@@ -1,68 +1,95 @@
 require("dotenv").config({ path: __dirname + "/.env.local" });
 
-const express = require("express");
-const https = require("https");
-const path = require("path");
+import { Elysia, file, t } from 'elysia'
+import { staticPlugin } from '@elysiajs/static'
+import embedBuilder from "./index.html";
 
-const app = express();
-const port = 3000;
+const port = process.env.PORT ?? 3000;
+console.log(`Listening on port: ${port}`);
 
-app.use(express.static(path.join(__dirname, "public")));
+// const app = Express();
+// app.use(express.static(path.join(__dirname, "public")));
+// app.listen(port, () => console.log(`Listening on port ${port}`));
 
-app.get("/", async (req, res) => {
-    res.sendFile(path.join(__dirname + "/index.html"));
+const userBodyType = t.Object({
+    showAsAlbum: t.MaybeEmpty(t.Boolean()),
+    showStatus: t.MaybeEmpty(t.Boolean()),
+    statusBar: t.MaybeEmpty(t.Boolean()),
+    showOnlyCover: t.MaybeEmpty(t.Boolean()),
+    transparent: t.MaybeEmpty(t.Boolean()),
+
+    bgColor: t.MaybeEmpty(t.String(), {
+        default: "#181414"
+    }),
+    trackColor: t.MaybeEmpty(t.String(), {
+        default: "f7f7f7"
+    }),
+    artistColor: t.MaybeEmpty(t.String(), {
+        default: "9f9f9f",
+    }),
+    statusBarColor: t.MaybeEmpty(t.String(), {
+        default: "#1c8b43"
+    }),
+
+    previousTracks: t.Number({
+        minimum: 1,
+        maximum: 5,
+    }),
 });
 
-app.get("/user/:user", async (req, res) => {
-    try {
-        console.log(`User: ${req.params.user}`);
+new Elysia({ nativeStaticResponse: true })
+    .use(staticPlugin({
+        indexHTML: true,
+    }))
+    .listen(port)
+    .all("/", embedBuilder)
+    .get("/user/:user", async ({ params, query, set }) => {
+        try {
+            console.log(`User: ${params.user}`);
 
-        res.setHeader("Content-Type", "image/svg+xml");
-        res.setHeader("Cache-Control", "s-max-age=1, stale-while-revalidate");
+            set.headers["content-type"] = "image/svg+xml";
+            set.headers["cache-control"] = "s-max-age=1, stale-while-revalidate";
 
-        const user = req.params.user;
-        const queries = req.query;
-        const showAsAlbum = queries?.showAsAlbum === "true";
-        const trackAmount = clampNumber(queries.previousTracks, 1, 5);
+            const user = params.user;
+            const queries = query;
+            const trackAmount = clampNumber(queries.previousTracks, 1, 5);
 
-        const response = await fetchRecentTracks(user);
-        let tracks = response.recenttracks.track;
-        if (showAsAlbum) {
-            tracks = tracks.filter(
-                (track, index, self) =>
-                    index ===
-                    self.findIndex((t) => {
-                        if (track.album.mbid !== "") {
-                            return t.album.mbid === track.album.mbid;
-                        } else {
-                            return t.album["#text"] === track.album["#text"];
-                        }
-                    })
-            );
+            const response = await fetchRecentTracks(user);
+
+            let tracks: any[] = response.recenttracks.track;
+
+            if (queries.showAsAlbum) {
+                tracks = tracks.filter(
+                    (track, index, self) =>
+                        index ===
+                        self.findIndex((t) => {
+                            if (track.album.mbid !== "") {
+                                return t.album.mbid === track.album.mbid;
+                            } else {
+                                return t.album["#text"] === track.album["#text"];
+                            }
+                        })
+                );
+            }
+
+            tracks = tracks.slice(0, trackAmount);
+
+            const svg = await getSVG(tracks, queries);
+            return svg;
+        } catch (e) {
+            console.log(e);
+            return "Error in retrieving the user, either the user doesn't exist or there was an error on our side!";
         }
+    }, {
+        query: userBodyType,
+        response: t.String(),
+    });
 
-        tracks = tracks.slice(0, trackAmount);
-
-        const svg = await getSVG(tracks, queries);
-        res.end(svg);
-    } catch (e) {
-        console.log(e);
-        res.end(
-            "Error in retrieving the user, either the user doesn't exist or there was an error on our side!"
-        );
-    }
-});
-
-app.listen(port, () => console.log(`Listening on port ${port}`));
-
-module.exports = app;
-
-function clampNumber(num, min, max) {
-    if (isNaN(num)) return min;
+function clampNumber(num: number, min: number, max: number) {
     return Math.min(Math.max(num, min), max);
 }
 
-async function fetchRecentTracks(user) {
+async function fetchRecentTracks(user: string): Promise<any> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
@@ -81,27 +108,27 @@ async function fetchRecentTracks(user) {
     }
 }
 
-function getCoverBase64(url) {
-    return new Promise((resolve) => {
-        https
-            .get(url, (resp) => {
-                resp.setEncoding("base64");
-                let data = "data:" + resp.headers["content-type"] + ";base64,";
-                resp.on("data", (chunk) => {
-                    data += chunk;
-                });
-                resp.on("end", () => {
-                    resolve(data);
-                });
-            })
-            .on("error", (err) => {
-                console.log(err.message);
-            });
-    });
+async function getCoverBase64(url: string) {
+    try {
+        const res = await fetch(url);
+
+        if (!res.ok || !res.body) {
+            throw new Error(`Failed to fetch image: ${res.statusText}`);
+        }
+
+        const contentType = res.headers.get("content-type") || "image/jpeg"; // fallback type
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+
+        return `data:${contentType};base64,${base64}`;
+    } catch (err) {
+        console.error("getCoverBase64 error:", err);
+        throw err;
+    }
 }
 
 // Needed for encoding special characters in XML
-function htmlSpecialChars(unsafe) {
+function htmlSpecialChars(unsafe: string) {
     return unsafe
         .replaceAll(`&`, "&amp;")
         .replaceAll(`<`, "&lt;")
@@ -110,39 +137,37 @@ function htmlSpecialChars(unsafe) {
         .replaceAll(`'`, "&apos;");
 }
 
-function htmlDiv(
-    artist,
-    track,
-    cover,
-    past = false,
-    showStatus = false,
-    statusBar = false,
-    showOnlyCover = false
-) {
-    if (!showOnlyCover)
+function htmlDiv(data: {
+    artist: string,
+    track: string,
+    cover: string,
+    past: boolean | undefined,
+    showStatus: boolean | undefined,
+    statusBar: boolean | undefined,
+    showOnlyCover: boolean | undefined,
+}) {
+    if (!data.showOnlyCover)
         return `
     <div class="main">
-        <img src="${cover}" class="cover" />
+        <img src="${data.cover}" class="cover" />
         <div class="content">
-            ${
-                showStatus && !statusBar
-                    ? `<div class="status">${
-                          !past ? "Listened to" : "Listening to"
-                      }</div>`
-                    : ""
+            ${data.showStatus && !data.statusBar
+                ? `<div class="status">${!data.past ? "Listened to" : "Listening to"
+                }</div>`
+                : ""
             }
-            <div class="song">${htmlSpecialChars(track)}</div>
-            <div class="artist">${htmlSpecialChars(artist)}</div>
-            ${statusBar && past ? `<div id="bars">${makeBars(30)}</div>` : ""}
+            <div class="song">${htmlSpecialChars(data.track)}</div>
+            <div class="artist">${htmlSpecialChars(data.artist)}</div>
+            ${data.statusBar && data.past ? `<div id="bars">${makeBars(30)}</div>` : ""}
         </div>
     </div>`;
 
     return `<div class="main">
-        <img src="${cover}" class="cover" />
+        <img src="${data.cover}" class="cover" />
     </div>`;
 }
 
-function makeBars(amount) {
+function makeBars(amount: number) {
     let html = "";
     for (let i = 0; i < amount; i++) {
         html += `<div class="bar"></div>`;
@@ -150,7 +175,7 @@ function makeBars(amount) {
     return html;
 }
 
-function getBarCSS(amount) {
+function getBarCSS(amount: number) {
     let css = "";
     for (let i = 0; i < amount; i++) {
         css += `.bar:nth-child(${i + 1}) {
@@ -161,62 +186,49 @@ function getBarCSS(amount) {
     return css;
 }
 
-async function getSVG(data, queries) {
+async function getSVG(data: any, queries: typeof userBodyType.static) {
     let html = "";
 
     const amountOfTrack = queries?.previousTracks > 1 ? data.length : 1;
-    const showStatus = queries?.showStatus === "true";
-    const statusBar = showStatus ? queries?.statusBar === "true" : false;
-    const showOnlyCover = queries?.showOnlyCover === "true";
+    const showStatus = queries?.showStatus;
+    const statusBar = showStatus ? queries?.statusBar : false;
+    const showOnlyCover = queries?.showOnlyCover;
     const bars = showStatus && statusBar ? getBarCSS(30 * amountOfTrack) : "";
 
     for (let i = 0; i < amountOfTrack; i++) {
         const artist = data[i].artist["#text"];
-        const trackName = data[i].name;
+        const trackName = data[i].name as string;
         const cover = await getCoverBase64(data[i].image[2]["#text"]);
         const nowPlaying = data[i]["@attr"]?.nowplaying;
-        html += htmlDiv(
+        html += htmlDiv({
             artist,
-            trackName,
             cover,
-            nowPlaying,
-            showStatus,
-            statusBar,
-            showOnlyCover
-        );
+            track: trackName,
+            past: nowPlaying,
+            showStatus: showStatus ?? false,
+            statusBar: statusBar ?? false,
+            showOnlyCover: showOnlyCover ?? false
+        });
     }
 
     let bgColor = "#181414";
     let trackColor = "f7f7f7";
     let artistColor = "9f9f9f";
     let statusBarColor = "#1c8b43";
-    if (Object.keys(queries).length > 0) {
-        if (queries.transparent === "true") bgColor = "transparent";
 
-        if (
-            queries.hasOwnProperty("trackColor") &&
-            queries.trackColor.length === 6
-        )
+    if (Object.keys(queries).length > 0) {
+        if (queries.transparent) bgColor = "transparent";
+
+        if (queries.trackColor?.length === 6)
             trackColor = queries.trackColor;
 
-        if (
-            queries.hasOwnProperty("artistColor") &&
-            queries.artistColor.length === 6
-        )
+        if (queries.artistColor?.length === 6)
             artistColor = queries.artistColor;
 
-        if (
-            queries.hasOwnProperty("bgColor") &&
-            queries.bgColor.length === 6 &&
-            queries.transparent !== "true"
-        )
+        if (queries.bgColor?.length === 6 && queries.transparent)
             bgColor = `#${queries.bgColor}`;
 
-        if (
-            queries.hasOwnProperty("statusBarColor") &&
-            queries.statusBarColor.length === 6 &&
-            statusBar
-        )
+        if (queries.statusBarColor?.length === 6 && statusBar)
             statusBarColor = `#${queries.statusBarColor}`;
     }
 
