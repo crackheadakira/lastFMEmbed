@@ -5,6 +5,7 @@
   "main": "./index.js",
   "scripts": {
     "build": "tsc && bun run css:prod",
+    "vercel-build": "bun run css:prod",
     "css": "bunx @tailwindcss/cli -i ./style.css -o ./dist/tailwind.css",
     "css:prod": "bunx @tailwindcss/cli -i ./style.css -o ./dist/tailwind.css --minify",
     "dev": "bun run index.ts"
